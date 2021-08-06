@@ -1,0 +1,1 @@
+Coremodded: %modcount% coremods loaded

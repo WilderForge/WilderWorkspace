@@ -33,7 +33,12 @@ public class Resource {
 	@SuppressWarnings("deprecation")
 	public void write(File destDir) throws IOException {
 		File dest = new File(destDir.getAbsolutePath() + "/" + destPath);
-		System.out.println("writing " + dest);
-		FileUtils.writeByteArrayToFile(dest, IOUtils.toByteArray(inputstream), false);
+		if(!dest.exists()) {
+			System.out.println("writing " + dest);
+			FileUtils.writeByteArrayToFile(dest, IOUtils.toByteArray(inputstream), false);
+		}
+		else {
+			System.out.println("Resource already exists: " + dest);
+		}
 	}
 }

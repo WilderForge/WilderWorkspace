@@ -7,5 +7,9 @@ repositories {
 }
 
 dependencies {
-
+	//Wildermyth, Scratchpad
+	implementation fileTree(dir: './bin/', include: ['*.jar'])
+	
+	//All dependencies of Wildermyth itself
+	implementation fileTree(dir: './bin/lib/', include: ['*.jar'])
 }

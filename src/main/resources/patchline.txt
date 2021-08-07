@@ -1,1 +1,1 @@
-Coremodded: %modcount% coremods loaded
+WilderWorkspace 0.0.0.0

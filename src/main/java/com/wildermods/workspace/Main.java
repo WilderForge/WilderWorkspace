@@ -44,7 +44,7 @@ public class Main {
 		WRITE_RULES.put("patchline", new WriteRule(".*/Wildermyth/patchline\\.txt") {
 			@Override
 			public void write(File source, File dest) throws IOException {
-				FileUtils.write(dest, IOUtils.toString(Main.class.getResourceAsStream("/patchline.txt")), false);
+				FileUtils.writeByteArrayToFile(dest, IOUtils.toByteArray(Main.class.getResourceAsStream("/patchline.txt")), false);
 			}}
 		);
 		

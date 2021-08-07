@@ -34,6 +34,6 @@ public class Resource {
 	public void write(File destDir) throws IOException {
 		File dest = new File(destDir.getAbsolutePath() + "/" + destPath);
 		System.out.println("writing " + dest);
-		FileUtils.write(dest, IOUtils.toString(inputstream));
+		FileUtils.writeByteArrayToFile(dest, IOUtils.toByteArray(inputstream), false);
 	}
 }

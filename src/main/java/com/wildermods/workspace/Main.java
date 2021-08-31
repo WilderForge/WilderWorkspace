@@ -48,12 +48,12 @@ public class Main {
 			}}
 		);
 		
-		NEW_RESOURCES.put(".gitignore", new Resource(".gitignore"));
-		NEW_RESOURCES.put(".gitattributes", new Resource(".gitattributes"));
+		NEW_RESOURCES.put(".gitignore", new Resource("gitignore", ".gitignore"));
+		NEW_RESOURCES.put(".gitattributes", new Resource("gitattributes", ".gitattributes"));
 		NEW_RESOURCES.put("build.gradle", new Resource("build.gradle"));
 		NEW_RESOURCES.put("gradlew", new Resource("gradlew"));
 		NEW_RESOURCES.put("gradlew.bat", new Resource("gradlew.bat"));
-		NEW_RESOURCES.put("gradleJar", new Resource("gradle/wrapper/gradle-wrapper.jar"));
+		NEW_RESOURCES.put("gradleJar", new Resource("gradle/wrapper/gradle-wrapper", "gradle/wrapper/gradle-wrapper.jar"));
 		NEW_RESOURCES.put("gradleProperties", new Resource("gradle/wrapper/gradle-wrapper.properties"));
 	}
 	

@@ -1,5 +1,6 @@
 plugins {
 	id 'java-library'
+	id 'com.github.johnrengelman.shadow' version "6.1.0"
 }
 
 repositories {
@@ -7,6 +8,24 @@ repositories {
 }
 
 dependencies {
-	implementation group: 'org.apache.commons', name: 'commons-text', version: '1.9'
-	implementation group: 'commons-io', name: 'commons-io', version: '2.8.0'
+	shadow group: 'org.apache.commons', name: 'commons-text', version: '1.9'
+	shadow group: 'commons-io', name: 'commons-io', version: '2.8.0'
 }
+
+shadowJar {
+	configurations = [project.configurations.shadow]
+	exclude 'META-INF/NOTICE.txt'
+	exclude 'META-INF/LICENSE.txt'
+	exclude 'gradle-wrapper-parameter-names.properties'
+	exclude 'gradle-wrapper-classpath.properties'
+	exclude 'gradle-cli-parameter-names.properties'
+	exclude 'gradle-cli-classpath.properties'
+	manifest {
+		attributes (
+			'Main-Class': 'com.wildermods.workspace.Main',
+			'Specification-Version': 8.0
+		)
+	}
+}
+
+build.finalizedBy shadowJar

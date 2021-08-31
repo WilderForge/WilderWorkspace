@@ -21,7 +21,11 @@ public class Resource {
 	public Resource(String resourceLocation, String destPath) {
 		this.resourceLocation = resourceLocation;
 		this.destPath = destPath;
-		this.inputstream = Resource.class.getResourceAsStream("/" + resourceLocation);
+		InputStream stream = Resource.class.getResourceAsStream(resourceLocation);
+		if(stream == null) { //If we're being executed from a dir not a jar
+			stream = Resource.class.getResourceAsStream("/" + resourceLocation);
+		}
+		this.inputstream = stream;
 		if(inputstream == null) {
 			throw new MissingResourceException("Could not find resource " + resourceLocation, Resource.class.getName(), resourceLocation);
 		}

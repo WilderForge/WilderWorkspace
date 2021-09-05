@@ -20,6 +20,9 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.lang3.StringUtils;
 
+import com.wildermods.workspace.decompile.DecompileWriteRule;
+import com.wildermods.workspace.decompile.Decompiler;
+
 import static com.wildermods.workspace.Version.NO_VERSION;
 
 @SuppressWarnings("deprecation")
@@ -28,6 +31,7 @@ public class Main {
 	private static final ConcurrentHashMap<String, String> EXCLUSIONS = new ConcurrentHashMap<String, String>();
 	private static final ConcurrentHashMap<String, WriteRule> WRITE_RULES = new ConcurrentHashMap<String, WriteRule>();
 	private static final ConcurrentHashMap<String, Resource> NEW_RESOURCES = new ConcurrentHashMap<String, Resource>();
+	private static final Decompiler DECOMPILER = new Decompiler();
 	
 	static {
 		EXCLUSIONS.put("logs", ".*/Wildermyth/logs.*");
@@ -47,6 +51,9 @@ public class Main {
 				FileUtils.writeByteArrayToFile(dest, IOUtils.toByteArray(Main.class.getResourceAsStream("/patchline.txt")), false);
 			}}
 		);
+		WRITE_RULES.put("wildermyth", new DecompileWriteRule(".*/Wildermyth/wildermyth\\.jar", DECOMPILER));
+		WRITE_RULES.put("scratchpad", new DecompileWriteRule(".*/Wildermyth/scratchpad\\.jar", DECOMPILER));
+		WRITE_RULES.put("server", new DecompileWriteRule(".*/Wildermyth/lib/server-.*\\.jar", DECOMPILER));
 		
 		NEW_RESOURCES.put(".gitignore", new Resource("gitignore", ".gitignore"));
 		NEW_RESOURCES.put(".gitattributes", new Resource("gitattributes", ".gitattributes"));

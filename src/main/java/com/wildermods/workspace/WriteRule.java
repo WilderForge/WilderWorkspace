@@ -1,7 +1,6 @@
 package com.wildermods.workspace;
 
 import java.io.File;
-import java.io.IOException;
 
 public abstract class WriteRule {
 	
@@ -11,7 +10,7 @@ public abstract class WriteRule {
 		this.regex = regex;
 	}
 	
-	public abstract void write(File source, File dest) throws IOException;
+	public abstract Throwable write(File source, File dest);
 	
 	public boolean matches(File source) {
 		if(source.getAbsolutePath().matches(regex)) {

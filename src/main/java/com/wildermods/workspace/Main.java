@@ -4,11 +4,14 @@ import java.awt.Window;
 import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
-
 import java.lang.reflect.InvocationTargetException;
+import java.net.URL;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.jar.JarFile;
 
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -20,6 +23,11 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.lang3.StringUtils;
 
+import com.strobel.assembler.InputTypeLoader;
+import com.strobel.assembler.metadata.ClasspathTypeLoader;
+import com.strobel.assembler.metadata.CompositeTypeLoader;
+import com.strobel.assembler.metadata.ITypeLoader;
+import com.strobel.assembler.metadata.JarTypeLoader;
 import com.wildermods.workspace.decompile.DecompileWriteRule;
 import com.wildermods.workspace.decompile.Decompiler;
 
@@ -47,8 +55,13 @@ public class Main {
 		
 		WRITE_RULES.put("patchline", new WriteRule(".*/Wildermyth/patchline\\.txt") {
 			@Override
-			public void write(File source, File dest) throws IOException {
-				FileUtils.writeByteArrayToFile(dest, IOUtils.toByteArray(Main.class.getResourceAsStream("/patchline.txt")), false);
+			public Throwable write(File source, File dest) {
+				System.out.println("adding custom " + dest);
+				try {
+					FileUtils.writeByteArrayToFile(dest, IOUtils.toByteArray(Main.class.getResourceAsStream("/patchline.txt")), false);
+				} catch (IOException e) {
+					return e;
+				} return null;
 			}}
 		);
 		WRITE_RULES.put("wildermyth", new DecompileWriteRule(".*/Wildermyth/wildermyth\\.jar", DECOMPILER));
@@ -65,9 +78,9 @@ public class Main {
 	}
 	
 	private static final HashSet<File> FILES = new HashSet<File>();
+	private static final HashSet<URL> JARS = new HashSet<URL>();
 	
 	public static void main(String[] args) throws InterruptedException, IOException, InvocationTargetException {
-		
 		Thread appThread = new Thread() {
 			public void run() {
 				try {
@@ -112,8 +125,11 @@ public class Main {
 										if(workspaceDirChooser.showOpenDialog(null) == JFileChooser.APPROVE_OPTION) {
 											Iterator<File> files = FileUtils.iterateFilesAndDirs(gameDir, TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
 											int found = 0;
+											int jars = 0;
 											int excluded = 0;
 											int copied = 0;
+											int modified = 0;
+											HashMap<File, Throwable> errors = new HashMap<File, Throwable>();
 											fileloop:
 											while(files.hasNext()) {
 												found++;
@@ -124,27 +140,60 @@ public class Main {
 														continue fileloop;
 													}
 												}
+												if(f.getName().endsWith(".jar")) {
+													try {
+														jars++;
+														JARS.add(f.toURI().toURL());
+													} catch (IOException e1) {
+														throw new IOError(e1);
+													}
+												}
 												FILES.add(f);
 												System.out.println(f.getAbsolutePath());
 											}
-											System.out.println("found " + found + " files to copy. " + excluded + " files excluded.");
+											System.out.println("Found: " + (found) + " total files.\n\nWith" + excluded + " files excluded, and\n" + jars + " jar files to add to this runtime classpath");
+											
+											try {
+												addJarsToDecompilationClasspath();
+											} catch (ClassNotFoundException | NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | IOException e1) {
+												throw new LinkageError(e1.getMessage(), e1);
+											}
+											
 											File workspaceDir = workspaceDirChooser.getSelectedFile();
 											File binDir = new File(workspaceDir.getAbsolutePath() + "/bin");
+											fileLoop:
 											for(File f : FILES) {
+												boolean isModified = false;
 												try {
 													if(!f.isDirectory()) {
 														File dest = new File(binDir.getAbsolutePath() + getLocalPath(gameDir, f));
-														System.out.println("copying " + f);
-														FileUtils.copyFile(f, dest);
 														for(WriteRule writeRule : WRITE_RULES.values()) {
 															if(writeRule.matches(f)) {
-																writeRule.write(f, dest);
+																isModified = true;
+																Throwable t = writeRule.write(f, dest);
+																if(t != null) {
+																	errors.put(f, t);
+																	continue fileLoop;
+																}
 															}
+														}
+														if(!isModified) {
+															modified++;
+															System.out.println("copying " + f);
+															FileUtils.copyFile(f, dest);
 														}
 													}
 													copied++;
 												} catch (IOException e) {
 													throw new IOError(e);
+												}
+											}
+											System.out.println("Copied " + copied + " files to workspace (" + modified + " of which were modified with custom writerules)");
+											if(errors.size()!= 0) {
+												System.err.println(errors.size() + " files failed to write correctly:");
+												for(Entry<File, Throwable> entry : errors.entrySet()) {
+													System.err.println("Could not write file " + entry.getKey() + ":");
+													entry.getValue().printStackTrace(System.err);
 												}
 											}
 											for(Resource r : NEW_RESOURCES.values()) {
@@ -174,7 +223,6 @@ public class Main {
 
 	}
 	
-	
 	@SuppressWarnings("deprecation")
 	private static Version getWildermythVersion(File gameDir) throws IOException {
 		File versionFile = new File(gameDir.getAbsolutePath() + "/version.txt");
@@ -189,6 +237,17 @@ public class Main {
 	
 	private static String getLocalPath(File gameDir, File file) {
 		return StringUtils.replaceOnce(file.getAbsolutePath(), gameDir.getAbsolutePath(), "");
+	}
+	
+	private static void addJarsToDecompilationClasspath() throws ClassNotFoundException, NoSuchMethodException, SecurityException, IllegalAccessException, IllegalArgumentException, InvocationTargetException, IOException {
+		HashSet<ITypeLoader> typeLoaders = new HashSet<ITypeLoader>();
+		typeLoaders.add(new ClasspathTypeLoader());
+		for(URL jarFile : JARS) {
+			System.out.println(jarFile + " added to classpath");
+			typeLoaders.add(new JarTypeLoader(new JarFile(jarFile.getFile())));
+		}
+		CompositeTypeLoader compositeLoader = new CompositeTypeLoader(typeLoaders.toArray(new ITypeLoader[]{}));
+		DECOMPILER.TYPE_LOADER = new InputTypeLoader(compositeLoader);
 	}
 	
 	private static void exit() {

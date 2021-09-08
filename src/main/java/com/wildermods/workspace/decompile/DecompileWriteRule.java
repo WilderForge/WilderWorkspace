@@ -1,8 +1,6 @@
 package com.wildermods.workspace.decompile;
 
 import java.io.File;
-import java.io.IOException;
-
 import com.wildermods.workspace.WriteRule;
 
 public class DecompileWriteRule extends WriteRule {
@@ -15,8 +13,9 @@ public class DecompileWriteRule extends WriteRule {
 	}
 
 	@Override
-	public void write(File source, File dest) throws IOException {
-		decompiler.Decompile(source, dest);
+	public Throwable write(File source, File dest) {
+		System.out.println("Decompiling " + dest);
+		return decompiler.Decompile(source, dest);
 	}
 
 }

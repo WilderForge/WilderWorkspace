@@ -6,7 +6,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.util.Enumeration;
-import java.util.HashSet;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
@@ -16,8 +15,6 @@ import com.strobel.decompiler.DecompilerSettings;
 import com.strobel.decompiler.PlainTextOutput;
 
 public class Decompiler {
-	
-	private HashSet<JarFile> jarFiles = new HashSet<JarFile>();
 	
 	private final DecompilerSettings settings;
 	public ITypeLoader TYPE_LOADER = null;
@@ -30,10 +27,6 @@ public class Decompiler {
 		this.settings = settings;
 		this.settings.setForceExplicitImports(true);
 		this.settings.setExcludeNestedTypes(true);
-	}
-	
-	public void addJarFile(JarFile jarfile) {
-		jarFiles.add(jarfile);
 	}
 	
 	public Throwable Decompile(File jarFile, File outputDir) {

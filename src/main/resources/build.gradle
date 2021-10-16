@@ -25,6 +25,14 @@ dependencies {
 	implementation fileTree(dir: './bin/lib/', include: ['*.jar'])
 }
 
+sourceSets {
+	main {
+		java {
+			srcDirs 'bin/decomp'
+		}
+	}
+}
+
 shadowJar {
 	mergeServiceFiles()
 	configurations = [project.configurations.shadow]

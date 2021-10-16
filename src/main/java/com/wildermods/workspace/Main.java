@@ -40,6 +40,7 @@ public class Main {
 	private static final ConcurrentHashMap<String, WriteRule> WRITE_RULES = new ConcurrentHashMap<String, WriteRule>();
 	private static final ConcurrentHashMap<String, Resource> NEW_RESOURCES = new ConcurrentHashMap<String, Resource>();
 	private static final Decompiler DECOMPILER = new Decompiler();
+	public static File binDir;
 	
 	static {
 		EXCLUSIONS.put("logs", ".*/Wildermyth/logs.*");
@@ -160,7 +161,12 @@ public class Main {
 											}
 											
 											File workspaceDir = workspaceDirChooser.getSelectedFile();
-											File binDir = new File(workspaceDir.getAbsolutePath() + "/bin");
+											binDir = new File(workspaceDir.getAbsolutePath() + "/bin");
+											
+											((DecompileWriteRule)WRITE_RULES.get("wildermyth")).setOriginCopyDest(new File(binDir.getPath() + "/wildermyth.jar"));
+											((DecompileWriteRule)WRITE_RULES.get("scratchpad")).setOriginCopyDest(new File(binDir.getPath() + "/scratchpad.jar"));
+											((DecompileWriteRule)WRITE_RULES.get("server")).setOriginCopyDest(new File(binDir.getPath() + "/lib/server-1.0.jar"));
+											
 											fileLoop:
 											for(File f : FILES) {
 												boolean isModified = false;
@@ -177,9 +183,11 @@ public class Main {
 																}
 															}
 														}
-														if(!isModified) {
+														if(isModified) {
 															modified++;
-															System.out.println("copying " + f);
+														}
+														else {
+														//System.out.println("copying " + f);
 															FileUtils.copyFile(f, dest);
 														}
 													}

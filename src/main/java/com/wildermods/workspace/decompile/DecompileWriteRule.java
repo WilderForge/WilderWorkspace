@@ -9,12 +9,10 @@ import com.wildermods.workspace.WriteRule;
 
 public class DecompileWriteRule extends WriteRule {
 
-	private final Decompiler decompiler;
 	private File originCopyDest;
 	
-	public DecompileWriteRule(String regex, Decompiler decompiler) {
+	public DecompileWriteRule(String regex) {
 		super(regex);
-		this.decompiler = decompiler;
 	}
 	
 	public DecompileWriteRule setOriginCopyDest(File dest) {
@@ -24,8 +22,8 @@ public class DecompileWriteRule extends WriteRule {
 
 	@Override
 	public Throwable write(File origin, File sourceDest) {
-		System.out.println("Decompiling " + origin.getName());
-		Throwable t = decompiler.Decompile(origin, sourceDest);
+		System.out.println("Decompiling " + origin.getName() + " to " + sourceDest);
+		Throwable t = new Decompiler(origin).decompile();
 		if(t != null) {
 			return t;
 		}

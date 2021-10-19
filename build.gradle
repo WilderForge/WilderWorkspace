@@ -1,32 +1,21 @@
 plugins {
 	id 'java-library'
-	id 'com.github.johnrengelman.shadow' version "6.1.0"
+	id 'eclipse'
 }
 
 repositories {
+    maven {
+        url "https://maven.fabricmc.net"
+    }
 	mavenCentral()
 }
 
+sourceCompatibility = '16'
+targetCompatibility = '16'
+
 dependencies {
+	implementation group: 'cuchaz', name: 'enigma', version: '1.4.7'
+	implementation group: 'cuchaz', name: 'enigma-cli', version: '1.4.7'
 	implementation group: 'commons-io', name: 'commons-io', version: '2.8.0'
 	implementation group: 'org.apache.commons', name: 'commons-text', version: '1.9'
-	implementation group: 'org.bitbucket.mstrobel', name: 'procyon-compilertools', version: '0.5.36'
 }
-
-shadowJar {
-	configurations = [project.configurations.shadow]
-	exclude 'META-INF/NOTICE.txt'
-	exclude 'META-INF/LICENSE.txt'
-	exclude 'gradle-wrapper-parameter-names.properties'
-	exclude 'gradle-wrapper-classpath.properties'
-	exclude 'gradle-cli-parameter-names.properties'
-	exclude 'gradle-cli-classpath.properties'
-	manifest {
-		attributes (
-			'Main-Class': 'com.wildermods.workspace.Main',
-			'Specification-Version': 8.0
-		)
-	}
-}
-
-build.finalizedBy shadowJar

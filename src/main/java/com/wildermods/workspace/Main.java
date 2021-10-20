@@ -236,7 +236,15 @@ public class Main {
 				throw new IOError(e);
 			}
 		}
-		System.out.println("returned");
+		HashSet<WriteRule> unmatched = new HashSet<WriteRule>();
+		for(WriteRule writeRule : WRITE_RULES.values()) {
+			if(!writeRule.matchFound()) {
+				unmatched.add(writeRule);
+			}
+		}
+		if(unmatched.size() > 0) {
+			System.err.println("WARNING: " + unmatched.size() + " the following WriteRules not match any files:");
+		}
 		return;
 	}
 	

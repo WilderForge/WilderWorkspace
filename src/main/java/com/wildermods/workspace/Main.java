@@ -3,7 +3,6 @@ package com.wildermods.workspace;
 import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
-
 import java.nio.file.Path;
 
 import java.util.HashMap;
@@ -78,6 +77,9 @@ public class Main {
 	private static final HashSet<Path> JARS = new HashSet<Path>();
 	
 	public static void main(String[] args) throws Throwable {
+		
+		checkJavaVersion();
+		
 		System.out.println(Runtime.version());
 		if(!confirm("Select the root directory of your Wildermyth installation.\nFiles will be copied and extracted from here to create a gradle workspace.", "WilderWorkspace: Select Game Location")) {
 			cancel();
@@ -97,6 +99,21 @@ public class Main {
 		File workspaceDir = selectWorkspaceDirectory();
 		
 		prepareWorkspace(gameInfo, workspaceDir);
+	}
+	
+	private static void checkJavaVersion() {
+	    String version = System.getProperty("java.version");
+	    if(version.startsWith("1.")) {
+	        version = version.substring(2, 3);
+	    } else {
+	        int dot = version.indexOf(".");
+	        if(dot != -1) { version = version.substring(0, dot); }
+	    } 
+	    int versionNo = Integer.parseInt(version);
+	    if(versionNo < 16) {
+	    	System.err.println("WilderWorkspace can only run on Java 16 or later, re-run this jar in a Java 16 environment. Don't worry though, the project that wilderworkspace creates will work with Java 8 or later!");
+	    	System.exit(-1);
+	    }
 	}
 	
 	private static GameInfo selectRootInstallation() {

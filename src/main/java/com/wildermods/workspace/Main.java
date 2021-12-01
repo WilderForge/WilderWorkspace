@@ -62,6 +62,7 @@ public class Main {
 		WRITE_RULES.put("scratchpad", new DecompileWriteRule(".*/Wildermyth/scratchpad\\.jar"));
 		WRITE_RULES.put("server", new DecompileWriteRule(".*/Wildermyth/lib/server-.*\\.jar"));
 		WRITE_RULES.put("gameEngine", new DecompileWriteRule(".*/Wildermyth/lib/gameEngine-.*\\.jar"));
+		WRITE_RULES.put("fmod", new DecompileWriteRule(".*/Wildermyth/lib/fmod-jni\\.jar"));
 		//WRITE_RULES.put("devvotes-client", new DecompileWriteRule(".*/Wildermyth/lib/devvotes-client\\.jar")); //Crashes Enigma with StackOverflowError
 		
 		NEW_RESOURCES.put(".gitignore", new Resource("gitignore", ".gitignore"));
@@ -190,6 +191,7 @@ public class Main {
 		((DecompileWriteRule)WRITE_RULES.get("scratchpad")).setOriginCopyDest(new File(binDir.getPath() + "/scratchpad.jar"));
 		((DecompileWriteRule)WRITE_RULES.get("server")).setOriginCopyDest(new File(binDir.getPath() + "/lib/server-1.0.jar"));
 		((DecompileWriteRule)WRITE_RULES.get("gameEngine")).setOriginCopyDest(new File(binDir.getPath() + "/lib/gameEngine-1.0.jar"));
+		((DecompileWriteRule)WRITE_RULES.get("fmod")).setOriginCopyDest(new File(binDir.getPath() + "/lib/fmod-jni.jar"));
 		//((DecompileWriteRule)WRITE_RULES.get("devvotes-client")).setOriginCopyDest(new File(binDir.getPath() + "/lib/devvotes-client.jar"));
 		
 		fileLoop:

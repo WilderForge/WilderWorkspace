@@ -26,7 +26,7 @@ import javax.swing.UIManager;
 import javax.swing.JRadioButton;
 import javax.swing.SwingConstants;
 
-public class UI {
+public class UI implements InstallationProperties {
 	
 	static final File defaultRootInstallation;
 	static {
@@ -40,22 +40,23 @@ public class UI {
 	}
 
 	private JFrame frame;
-	private JTextField txtModdedfiledirectory;
-	private JCheckBox chckbxCopyModsFolder;
-	private JCheckBox chckbxCopySaveData;
+	private JTextField destinationDirectory;
+	private JCheckBox copyModsFolder;
+	private JCheckBox copySaveData;
 	private JCheckBox forceCopy;
-	private JTextField txtUnmoddedFileDirectory;
+	private JTextField sourceDirectory;
 	private JScrollPane scrollPane;
 	private JTextArea textArea;
-	private JCheckBox chckbxCreateGradleWorkspace;
+	private JCheckBox createGradleWorkspace;
 	//private JRadioButton rdbtnAdvancedDecomposition;
-	private JButton btnCreateNewModded;
+	private JButton createButton;
 	private SmartScroller xSmartScroller;
 	private SmartScroller ySmartScroller;
-	private JCheckBox chckbxOverwriteModsFolder;
-	private JCheckBox chckbxOverwriteSaves;
-	private JCheckBox chckbxOverwriteCoreGame;
+	private JCheckBox overwriteModsFolder;
+	private JCheckBox overwriteSaves;
+	private JCheckBox overwriteCoreGame;
 	private JRadioButton nuke;
+	private JCheckBox decompile;
 
 	/**
 	 * Launch the application.
@@ -96,14 +97,14 @@ public class UI {
 		lblUnmoddedDirectory.setBounds(12, 12, 165, 15);
 		frame.getContentPane().add(lblUnmoddedDirectory);
 		
-		txtUnmoddedFileDirectory = new JTextField();
-		txtUnmoddedFileDirectory.setToolTipText("The directory of your unmodified wildermyth installation. Usually in your steam folder.");
+		sourceDirectory = new JTextField();
+		sourceDirectory.setToolTipText("The directory of your unmodified wildermyth installation. Usually in your steam folder.");
 		if(defaultRootInstallation.exists()) {
-			txtUnmoddedFileDirectory.setText(defaultRootInstallation.getAbsolutePath());
+			sourceDirectory.setText(defaultRootInstallation.getAbsolutePath());
 		}
-		txtUnmoddedFileDirectory.setBounds(171, 10, 538, 19);
-		frame.getContentPane().add(txtUnmoddedFileDirectory);
-		txtUnmoddedFileDirectory.setColumns(10);
+		sourceDirectory.setBounds(171, 10, 538, 19);
+		frame.getContentPane().add(sourceDirectory);
+		sourceDirectory.setColumns(10);
 		
 		JButton btnChangeUnmodded = new JButton("Change");
 		btnChangeUnmodded.setToolTipText("Change where wilderforge will copy the game files from");
@@ -119,10 +120,10 @@ public class UI {
 			fileChooser.showOpenDialog(frame);
 			File file = fileChooser.getSelectedFile();
 			if(file != null) {
-				txtUnmoddedFileDirectory.setText(file.getAbsolutePath());
+				sourceDirectory.setText(file.getAbsolutePath());
 			}
 			else {
-				txtUnmoddedFileDirectory.setText(null);
+				sourceDirectory.setText(null);
 			}
 			updateState();
 			frame.setEnabled(true);
@@ -135,11 +136,11 @@ public class UI {
 		lblModdedDirectory.setBounds(12, 37, 165, 15);
 		frame.getContentPane().add(lblModdedDirectory);
 		
-		txtModdedfiledirectory = new JTextField();
-		txtModdedfiledirectory.setToolTipText("Where your new modded game instance will be located.");
-		txtModdedfiledirectory.setBounds(171, 35, 538, 19);
-		frame.getContentPane().add(txtModdedfiledirectory);
-		txtModdedfiledirectory.setColumns(10);
+		destinationDirectory = new JTextField();
+		destinationDirectory.setToolTipText("Where your new modded game instance will be located.");
+		destinationDirectory.setBounds(171, 35, 538, 19);
+		frame.getContentPane().add(destinationDirectory);
+		destinationDirectory.setColumns(10);
 		
 		JButton btnChangeModded = new JButton("Change");
 		btnChangeModded.setToolTipText("Change where your new Wildermyth game instance will be located.");
@@ -155,10 +156,10 @@ public class UI {
 			fileChooser.showOpenDialog(frame);
 			File file = fileChooser.getSelectedFile();
 			if(file != null) {
-				txtModdedfiledirectory.setText(file.getAbsolutePath());
+				destinationDirectory.setText(file.getAbsolutePath());
 			}
 			else {
-				txtModdedfiledirectory.setText(null);
+				destinationDirectory.setText(null);
 			}
 			updateState();
 			frame.setEnabled(true);
@@ -170,28 +171,32 @@ public class UI {
 		separator.setBounds(12, 64, 826, 2);
 		frame.getContentPane().add(separator);
 		
-		chckbxCopyModsFolder = new JCheckBox("Copy Mods Folder");
-		chckbxCopyModsFolder.setToolTipText("Copy all files located in the mods folder into your new game instance.");
-		chckbxCopyModsFolder.setBounds(12, 74, 165, 23);
-		frame.getContentPane().add(chckbxCopyModsFolder);
+		copyModsFolder = new JCheckBox("Copy Mods Folder");
+		copyModsFolder.setToolTipText("Copy all files located in the mods folder into your new game instance.");
+		copyModsFolder.setBounds(12, 74, 165, 23);
+		frame.getContentPane().add(copyModsFolder);
 		
-		chckbxCopySaveData = new JCheckBox("Copy Save Data");
-		chckbxCopySaveData.setToolTipText("Copy all save data and backups into your new game instance.");
-		chckbxCopySaveData.setBounds(12, 99, 165, 23);
-		frame.getContentPane().add(chckbxCopySaveData);
+		copySaveData = new JCheckBox("Copy Save Data");
+		copySaveData.setToolTipText("Copy all save data and backups into your new game instance.");
+		copySaveData.setBounds(12, 99, 165, 23);
+		frame.getContentPane().add(copySaveData);
 		
 		JButton btnHelp = new JButton("Help");
 		btnHelp.setBounds(721, 73, 117, 25);
 		frame.getContentPane().add(btnHelp);
 		
-		btnCreateNewModded = new JButton("Create New Game Instance");
-		btnCreateNewModded.setBounds(12, 130, 826, 71);
-		btnCreateNewModded.addActionListener((listener) -> {
+		createButton = new JButton("Create New Game Instance");
+		createButton.setBounds(12, 130, 826, 71);
+		createButton.addActionListener((listener) -> {
 			if (updateState()) {
-				System.out.println("copy shit");
+				try {
+					Main.main(this);
+				} catch (InterruptedException e) {
+					throw new Error(e);
+				}
 			}
 		});
-		frame.getContentPane().add(btnCreateNewModded);
+		frame.getContentPane().add(createButton);
 		
 		scrollPane = new JScrollPane();
 		scrollPane.setBounds(12, 210, 826, 239);
@@ -218,12 +223,12 @@ public class UI {
 		lblforJavaDevelopers.setOpaque(true);
 		frame.getContentPane().add(lblforJavaDevelopers);
 		
-		chckbxCreateGradleWorkspace = new JCheckBox("Create Gradle Decomp Workspace");
-		chckbxCreateGradleWorkspace.setBackground(Color.GRAY);
-		chckbxCreateGradleWorkspace.setToolTipText("Creates a gradle workspace in the destination directory.");
-		chckbxCreateGradleWorkspace.setForeground(UIManager.getColor("OptionPane.errorDialog.border.background"));
-		chckbxCreateGradleWorkspace.setBounds(12, 512, 466, 23);
-		frame.getContentPane().add(chckbxCreateGradleWorkspace);
+		createGradleWorkspace = new JCheckBox("Create Gradle Workspace");
+		createGradleWorkspace.setBackground(Color.GRAY);
+		createGradleWorkspace.setToolTipText("Creates a gradle workspace in the destination directory.");
+		createGradleWorkspace.setForeground(UIManager.getColor("OptionPane.errorDialog.border.background"));
+		createGradleWorkspace.setBounds(12, 512, 207, 23);
+		frame.getContentPane().add(createGradleWorkspace);
 		
 		forceCopy = new JCheckBox("Force Copy");
 		forceCopy.setEnabled(false);
@@ -232,23 +237,23 @@ public class UI {
 		forceCopy.setBounds(580, 99, 129, 23);
 		frame.getContentPane().add(forceCopy);
 		
-		chckbxOverwriteSaves = new JCheckBox("Overwrite Saves");
-		chckbxOverwriteSaves.setBackground(Color.GRAY);
-		chckbxOverwriteSaves.setForeground(UIManager.getColor("OptionPane.errorDialog.border.background"));
-		chckbxOverwriteSaves.setBounds(183, 99, 156, 23);
-		frame.getContentPane().add(chckbxOverwriteSaves);
+		overwriteSaves = new JCheckBox("Overwrite Saves");
+		overwriteSaves.setBackground(Color.GRAY);
+		overwriteSaves.setForeground(UIManager.getColor("OptionPane.errorDialog.border.background"));
+		overwriteSaves.setBounds(183, 99, 156, 23);
+		frame.getContentPane().add(overwriteSaves);
 		
-		chckbxOverwriteModsFolder = new JCheckBox("Overwrite Mods");
-		chckbxOverwriteModsFolder.setForeground(UIManager.getColor("OptionPane.errorDialog.border.background"));
-		chckbxOverwriteModsFolder.setBackground(Color.GRAY);
-		chckbxOverwriteModsFolder.setBounds(183, 74, 156, 23);
-		frame.getContentPane().add(chckbxOverwriteModsFolder);
+		overwriteModsFolder = new JCheckBox("Overwrite Mods");
+		overwriteModsFolder.setForeground(UIManager.getColor("OptionPane.errorDialog.border.background"));
+		overwriteModsFolder.setBackground(Color.GRAY);
+		overwriteModsFolder.setBounds(183, 74, 156, 23);
+		frame.getContentPane().add(overwriteModsFolder);
 		
-		chckbxOverwriteCoreGame = new JCheckBox("Overwrite Core Game Files");
-		chckbxOverwriteCoreGame.setForeground(UIManager.getColor("OptionPane.errorDialog.border.background"));
-		chckbxOverwriteCoreGame.setBackground(Color.GRAY);
-		chckbxOverwriteCoreGame.setBounds(343, 74, 231, 23);
-		frame.getContentPane().add(chckbxOverwriteCoreGame);
+		overwriteCoreGame = new JCheckBox("Overwrite Core Game Files");
+		overwriteCoreGame.setForeground(UIManager.getColor("OptionPane.errorDialog.border.background"));
+		overwriteCoreGame.setBackground(Color.GRAY);
+		overwriteCoreGame.setBounds(343, 74, 231, 23);
+		frame.getContentPane().add(overwriteCoreGame);
 		
 		
 		nuke = new JRadioButton("*NUKE Destination Directory*");
@@ -258,6 +263,13 @@ public class UI {
 		nuke.setHorizontalAlignment(SwingConstants.CENTER);
 		nuke.setBounds(343, 99, 233, 23);
 		frame.getContentPane().add(nuke);
+		
+		decompile = new JCheckBox("Decompile classes");
+		decompile.setEnabled(false);
+		decompile.setForeground(UIManager.getColor("OptionPane.errorDialog.border.background"));
+		decompile.setBackground(Color.GRAY);
+		decompile.setBounds(219, 512, 259, 23);
+		frame.getContentPane().add(decompile);
 		
 		
 		/*
@@ -293,7 +305,7 @@ public class UI {
 		String[] warnings = checkWarnings();
 		String[] checkInfo = checkInfo();
 		if(errors.length != 0) {
-			btnCreateNewModded.setEnabled(false);
+			createButton.setEnabled(false);
 			append(s, 0, (errors.length > 1 ? "There are " + errors.length + " errors" : "There is " + errors.length + " error") + " that must resolved before installation can begin:");
 			for(String e : errors) {
 				append(s, 1, e);
@@ -301,7 +313,7 @@ public class UI {
 			s.append('\n');
 		}
 		else {
-			btnCreateNewModded.setEnabled(true);
+			createButton.setEnabled(true);
 		}
 		
 		if(warnings.length != 0) {
@@ -320,8 +332,8 @@ public class UI {
 	private String[] checkErrors() {
 		List<String> errors = new ArrayList<String>();
 		
-		File unmoddedDir = getFile(txtUnmoddedFileDirectory.getText());
-		File newInstanceDir = getFile(txtModdedfiledirectory.getText());
+		File unmoddedDir = getFile(sourceDirectory.getText());
+		File newInstanceDir = getFile(destinationDirectory.getText());
 		boolean invalidSourceDir = false;
 		boolean invalidDestDir = false;
 		
@@ -403,24 +415,24 @@ public class UI {
 						forceCopy.setVisible(false);
 					}
 					
-					if(modsDir != null && chckbxCopyModsFolder.isSelected() && modsDir.exists() && !nuke.isSelected() && forceCopy.isSelected()) {
-						chckbxOverwriteModsFolder.setEnabled(true);
-						chckbxOverwriteModsFolder.setVisible(true);
+					if(modsDir != null && copyModsFolder.isSelected() && modsDir.exists() && !nuke.isSelected() && forceCopy.isSelected()) {
+						overwriteModsFolder.setEnabled(true);
+						overwriteModsFolder.setVisible(true);
 					}
 					else {
-						chckbxOverwriteModsFolder.setEnabled(false);
-						chckbxOverwriteModsFolder.setSelected(false);
-						chckbxOverwriteModsFolder.setVisible(false);
+						overwriteModsFolder.setEnabled(false);
+						overwriteModsFolder.setSelected(false);
+						overwriteModsFolder.setVisible(false);
 					}
 					
-					if(savesDir != null && chckbxCopySaveData.isSelected() && savesDir.exists() && !nuke.isSelected() && forceCopy.isSelected()) {
-						chckbxOverwriteSaves.setEnabled(true);
-						chckbxOverwriteSaves.setVisible(true);
+					if(savesDir != null && copySaveData.isSelected() && savesDir.exists() && !nuke.isSelected() && forceCopy.isSelected()) {
+						overwriteSaves.setEnabled(true);
+						overwriteSaves.setVisible(true);
 					}
 					else {
-						chckbxOverwriteSaves.setEnabled(false);
-						chckbxOverwriteSaves.setSelected(false);
-						chckbxOverwriteSaves.setVisible(false);
+						overwriteSaves.setEnabled(false);
+						overwriteSaves.setSelected(false);
+						overwriteSaves.setVisible(false);
 					}
 					
 				}
@@ -429,12 +441,12 @@ public class UI {
 		
 		boolean noErrors = errors.size() == 0;
 		
-		chckbxOverwriteCoreGame.setVisible(noErrors && forceCopy.isEnabled());
-		chckbxCopyModsFolder.setEnabled(noErrors);
-		chckbxCopySaveData.setEnabled(noErrors);
-		if(!chckbxOverwriteCoreGame.isVisible() || nuke.isSelected()) {
-			chckbxOverwriteCoreGame.setSelected(false);
-			chckbxOverwriteCoreGame.setVisible(false);
+		overwriteCoreGame.setVisible(noErrors && forceCopy.isEnabled());
+		copyModsFolder.setEnabled(noErrors);
+		copySaveData.setEnabled(noErrors);
+		if(!overwriteCoreGame.isVisible() || nuke.isSelected()) {
+			overwriteCoreGame.setSelected(false);
+			overwriteCoreGame.setVisible(false);
 		}
 		
 		/*
@@ -455,8 +467,8 @@ public class UI {
 	private String[] checkWarnings() {
 		List<String> warnings = new ArrayList<String>();
 		
-		File unmoddedDir = getFile(txtUnmoddedFileDirectory.getText());
-		File newInstanceDir = getFile(txtModdedfiledirectory.getText());
+		File unmoddedDir = getFile(sourceDirectory.getText());
+		File newInstanceDir = getFile(destinationDirectory.getText());
 		
 		int unmoddedDirLength = 0;
 		int newInstanceDirLength = 0;
@@ -488,13 +500,13 @@ public class UI {
 			warnings.add("* Destination directory is " + newInstanceDirLength + " characters long... Files might not copy over correctly on windows systems, resulting in an unusable instance.");
 		}
 		
-		if(chckbxOverwriteSaves.isSelected()) {
+		if(overwriteSaves.isSelected()) {
 			warnings.add("* Existing save files in destination directory will be overwritten if they exist in the source directory");
 		}
-		if(chckbxOverwriteCoreGame.isSelected()) {
+		if(overwriteCoreGame.isSelected()) {
 			warnings.add("* All core game files (assets & jar files) will be overwritten if they exist in the source directory");
 		}
-		if(chckbxOverwriteModsFolder.isSelected()) {
+		if(overwriteModsFolder.isSelected()) {
 			warnings.add("* Existing files in destination mod directory will be overwritten if they exist in the source directory");
 		}
 		
@@ -507,8 +519,16 @@ public class UI {
 			}
 		}
 		
-		if(chckbxCreateGradleWorkspace.isSelected()) {
+		if(createGradleWorkspace.isSelected()) {
 			warnings.add("* Installation will include a gradle development environment.");
+			decompile.setEnabled(true);
+			if(decompile.isSelected()) {
+				warnings.add("* Installer will decompile game classes for the gradle environment");
+			}
+		}
+		else {
+			decompile.setEnabled(false);
+			decompile.setSelected(false);
 		}
 		
 		return warnings.toArray(new String[]{});
@@ -532,4 +552,60 @@ public class UI {
 		}
 		return null;
 	}
+
+	@Override
+	public File getSourceDir() {
+		return new File(sourceDirectory.getText());
+	}
+
+	@Override
+	public File getDestDir() {
+		return new File(destinationDirectory.getText());
+	}
+
+	@Override
+	public boolean copySaves() {
+		return copySaveData.isSelected();
+	}
+
+	@Override
+	public boolean copyMods() {
+		return copyModsFolder.isSelected();
+	}
+
+	@Override
+	public boolean overwriteSaves() {
+		return overwriteSaves.isSelected();
+	}
+
+	@Override
+	public boolean overwriteMods() {
+		return overwriteModsFolder.isSelected();
+	}
+
+	@Override
+	public boolean overwriteGame() {
+		return overwriteCoreGame.isSelected();
+	}
+
+	@Override
+	public boolean forceCopy() {
+		return forceCopy.isSelected();
+	}
+
+	@Override
+	public boolean createGradle() {
+		return createGradleWorkspace.isSelected();
+	}
+
+	@Override
+	public boolean nuke() {
+		return nuke.isSelected();
+	}
+
+	@Override
+	public boolean decompile() {
+		return decompile.isSelected();
+	}
+
 }

@@ -11,10 +11,6 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.swing.JFileChooser;
-import javax.swing.JFrame;
-import javax.swing.JOptionPane;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
@@ -31,21 +27,35 @@ import cuchaz.enigma.classprovider.JarClassProvider;
 public class Main {
 
 	private static final ConcurrentHashMap<String, String> EXCLUSIONS = new ConcurrentHashMap<String, String>();
+	private static final ConcurrentHashMap<String, String> FORCE_INCLUSIONS = new ConcurrentHashMap<String, String>();
 	private static final ConcurrentHashMap<String, WriteRule> WRITE_RULES = new ConcurrentHashMap<String, WriteRule>();
 	private static final ConcurrentHashMap<String, Resource> NEW_RESOURCES = new ConcurrentHashMap<String, Resource>();
 	public static File binDir;
+	
+	public static final String LOGS = ".*/Wildermyth/logs.*";
+	public static final String OUT = ".*/Wildermyth/out.*";
+	public static final String JRE = ".*/Wildermyth/jre.*";
+	public static final String PLAYERS = ".*/Wildermyth/players.*";
+	public static final String SCREENSHOTS = ".*/Wildermyth/screenshots.*";
+	public static final String FEEDBACK = ".*/Wildermyth/feedback.*";
+	public static final String BACKUPS = ".*/Wildermyth/backup.*";
+	public static final String MODS = ".*/Wildermyth/mods.*";
+	public static final String SCRATCH_MODS = ".*/Wildermyth/mods/user.*";
+	public static final String CHANGELOG = ".*/Wildermyth/change log.*";
+	public static final String README = ".*/Wildermyth/readme\\.txt";
+	public static final String PATCHLINE = ".*/Wildermyth/patchline\\.txt";
 	
 	static {
 		EXCLUSIONS.put("logs", ".*/Wildermyth/logs.*");
 		EXCLUSIONS.put("out", ".*/Wildermyth/out.*");
 		EXCLUSIONS.put("jre", ".*/Wildermyth/jre.*");
-		EXCLUSIONS.put("players", ".*/Wildermyth/players.*");
 		EXCLUSIONS.put("screenshots", ".*/Wildermyth/screenshots.*");
 		EXCLUSIONS.put("feedback", ".*/Wildermyth/feedback.*");
-		EXCLUSIONS.put("backup", ".*/Wildermyth/backup.*");
 		EXCLUSIONS.put("scratchmods", ".*/Wildermyth/mods/user.*");
 		EXCLUSIONS.put("changelog", ".*/Wildermyth/change log.*");
 		EXCLUSIONS.put("readme", ".*/Wildermyth/readme\\.txt");
+		
+		FORCE_INCLUSIONS.put("builtInMods", ".*/Wildermyth/mods/builtIn.*");
 		
 		WRITE_RULES.put("patchline", new WriteRule(".*/Wildermyth/patchline\\.txt") {
 			@Override
@@ -58,48 +68,42 @@ public class Main {
 				} return null;
 			}}
 		);
-		WRITE_RULES.put("wildermyth", new DecompileWriteRule(".*/Wildermyth/wildermyth\\.jar"));
-		WRITE_RULES.put("scratchpad", new DecompileWriteRule(".*/Wildermyth/scratchpad\\.jar"));
-		WRITE_RULES.put("server", new DecompileWriteRule(".*/Wildermyth/lib/server-.*\\.jar"));
-		WRITE_RULES.put("gameEngine", new DecompileWriteRule(".*/Wildermyth/lib/gameEngine-.*\\.jar"));
-		WRITE_RULES.put("fmod", new DecompileWriteRule(".*/Wildermyth/lib/fmod-jni\\.jar"));
-		//WRITE_RULES.put("devvotes-client", new DecompileWriteRule(".*/Wildermyth/lib/devvotes-client\\.jar")); //Crashes Enigma with StackOverflowError
-		
-		NEW_RESOURCES.put(".gitignore", new Resource("gitignore", ".gitignore"));
-		NEW_RESOURCES.put(".gitattributes", new Resource("gitattributes", ".gitattributes"));
-		NEW_RESOURCES.put("build.gradle", new Resource("build.gradle"));
-		NEW_RESOURCES.put("gradlew", new Resource("gradlew"));
-		NEW_RESOURCES.put("gradlew.bat", new Resource("gradlew.bat"));
-		NEW_RESOURCES.put("gradleJar", new Resource("gradle/wrapper/gradle-wrapper", "gradle/wrapper/gradle-wrapper.jar"));
-		NEW_RESOURCES.put("gradleProperties", new Resource("gradle/wrapper/gradle-wrapper.properties"));
 	}
 	
 	private static final HashSet<File> FILES = new HashSet<File>();
 	private static final HashSet<Path> JARS = new HashSet<Path>();
 	
-	public static void main(String[] args) throws Throwable {
-		
+	private static final HashMap<String, Object> PROPERTIES = new HashMap<String, Object>();
+	
+	private static boolean overwriteByDefault = false;
+	
+	public static void main(String[] args) throws InterruptedException {
+		if(args.length == 0) {
+			System.err.println("Warning: Calling Main.main(String[]) with no arguments is discouraged. Call UI.main(String[]) instead!");
+			UI.main(args);
+		}
+		else {
+			main(InstallationProperties.fromArgs(args));
+		}
+	}
+	
+	public static void main(InstallationProperties properties) throws InterruptedException {
 		checkJavaVersion();
-		
-		System.out.println(Runtime.version());
-		if(!confirm("Select the root directory of your Wildermyth installation.\nFiles will be copied and extracted from here to create a gradle workspace.", "WilderWorkspace: Select Game Location")) {
-			cancel();
+		if(properties.isValid()) {
+			File sourceDir = properties.getSourceDir();
+			File workspaceDir = properties.getDestDir();
+			GameInfo gameVersion = properties.getGameInfo();
+			
+			setupWriteRulesAndResources(properties);
+			
+			System.out.println("Wildermyth version: " + gameVersion);
+			
+			prepareWorkspace(properties);
+			
 		}
-		
-		GameInfo gameInfo = selectRootInstallation();
-		if(gameInfo.getVersion() == Version.NO_VERSION) {
-			if(!confirm("No wildermyth version detected in " + gameInfo.getGameDir() + "\n\n Continue anyway?", "Warning")) {
-				cancel();
-			}
+		else {
+			throw new IllegalStateException("Installation properties were invalid!");
 		}
-		
-		if(!confirm("Select the root directory for your gradle workspace.\nFiles will be copied here.\nExisting files will be overwritten if they have the same name.\n\n" + "Wildermyth version: " + gameInfo.getVersion(), "WilderWorkspace: Select Workspace Location")) {
-			cancel();
-		}
-		
-		File workspaceDir = selectWorkspaceDirectory();
-		
-		prepareWorkspace(gameInfo, workspaceDir);
 	}
 	
 	private static void checkJavaVersion() {
@@ -117,49 +121,50 @@ public class Main {
 	    }
 	}
 	
-	private static GameInfo selectRootInstallation() {
-		JFileChooser gameDirChooser = new JFileChooser();
-		JFrame frame = new JFrame();
-		gameDirChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-		gameDirChooser.setAcceptAllFileFilterUsed(true);
-		gameDirChooser.setVisible(true);
-		gameDirChooser.setFileHidingEnabled(false);
-		File defaultLocation = new File(System.getProperty("user.home") + "/.local/share/Steam/steamapps/common/Wildermyth");
-		if(defaultLocation.exists() && defaultLocation.isDirectory()) {
-			gameDirChooser.setCurrentDirectory(defaultLocation);
-		}
-		if(gameDirChooser.showOpenDialog(frame) == JFileChooser.APPROVE_OPTION) {
-			GameInfo gameInfo = new GameInfo(gameDirChooser.getSelectedFile());
-			frame.dispose();
-			return gameInfo;
+	private static void setupWriteRulesAndResources(InstallationProperties properties) {
+		
+		overwriteByDefault = properties.overwriteGame();
+		
+		if(!properties.copySaves()) {
+			EXCLUSIONS.put("players", ".*/Wildermyth/players.*");
+			EXCLUSIONS.put("backup", ".*/Wildermyth/backup.*");
 		}
 		else {
-			cancel(frame);
+			WRITE_RULES.put("overwritePlayers", new ShouldOverwriteWriteRule(properties.overwriteSaves(), PLAYERS));
+			WRITE_RULES.put("overwriteBackups", new ShouldOverwriteWriteRule(properties.overwriteSaves(), BACKUPS));
 		}
-		throw new AssertionError("This code should be unreachable.");
-	}
-	
-	private static File selectWorkspaceDirectory() {
-		File workspaceDir = null;
-		JFileChooser workspaceDirChooser = new JFileChooser();
-		JFrame frame = new JFrame();
-		workspaceDirChooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-		workspaceDirChooser.setAcceptAllFileFilterUsed(true);
-		workspaceDirChooser.setVisible(true);
-		workspaceDirChooser.setFileHidingEnabled(false);
-		if(workspaceDirChooser.showOpenDialog(frame) == JFileChooser.APPROVE_OPTION) {
-			workspaceDir = workspaceDirChooser.getSelectedFile();
-			frame.dispose();
-			return workspaceDir;
+		
+		if(!properties.overwriteMods()) {
+			EXCLUSIONS.put("mods", ".*/Wildermyth/mods.*");
 		}
 		else {
-			cancel(frame);
+			WRITE_RULES.put("overwriteMods", new ShouldOverwriteWriteRule(properties.overwriteMods(), MODS));
 		}
-		throw new AssertionError("This code should be unreachable.");
+		
+		if(properties.createGradle()) {
+			NEW_RESOURCES.put(".gitignore", new Resource("gitignore", ".gitignore"));
+			NEW_RESOURCES.put(".gitattributes", new Resource("gitattributes", ".gitattributes"));
+			NEW_RESOURCES.put("build.gradle", new Resource("build.gradle"));
+			NEW_RESOURCES.put("gradlew", new Resource("gradlew"));
+			NEW_RESOURCES.put("gradlew.bat", new Resource("gradlew.bat"));
+			NEW_RESOURCES.put("gradleJar", new Resource("gradle/wrapper/gradle-wrapper", "gradle/wrapper/gradle-wrapper.jar"));
+			NEW_RESOURCES.put("gradleProperties", new Resource("gradle/wrapper/gradle-wrapper.properties"));
+		}
+		
+		if(properties.decompile()) {
+			WRITE_RULES.put("wildermyth", new DecompileWriteRule(".*/Wildermyth/wildermyth\\.jar"));
+			WRITE_RULES.put("scratchpad", new DecompileWriteRule(".*/Wildermyth/scratchpad\\.jar"));
+			WRITE_RULES.put("server", new DecompileWriteRule(".*/Wildermyth/lib/server-.*\\.jar"));
+			WRITE_RULES.put("gameEngine", new DecompileWriteRule(".*/Wildermyth/lib/gameEngine-.*\\.jar"));
+			WRITE_RULES.put("fmod", new DecompileWriteRule(".*/Wildermyth/lib/fmod-jni\\.jar"));
+			//WRITE_RULES.put("devvotes-client", new DecompileWriteRule(".*/Wildermyth/lib/devvotes-client\\.jar")); //Crashes Enigma with StackOverflowError
+		}
+		
 	}
 	
-	private static void prepareWorkspace(GameInfo gameInfo, File workspaceDir) throws InterruptedException {
-		Iterator<File> files = FileUtils.iterateFilesAndDirs(gameInfo.getGameDir(), TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
+	private static void prepareWorkspace(InstallationProperties properties) throws InterruptedException {
+		File workspaceDir = properties.getDestDir();
+		Iterator<File> files = FileUtils.iterateFilesAndDirs(properties.getSourceDir(), TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
 		int found = 0;
 		int jars = 0;
 		int excluded = 0;
@@ -170,7 +175,14 @@ public class Main {
 		while(files.hasNext()) {
 			found++;
 			File f = files.next();
+			exclusions:
 			for(String e : EXCLUSIONS.values()) {
+				for(String i : FORCE_INCLUSIONS.values()) {
+					if(f.getAbsolutePath().matches(i)) {
+						System.out.println("Force including " + f + " regardless of exclusion rules.");
+						break exclusions;
+					}
+				}
 				if(f.getAbsolutePath().matches(e)) {
 					excluded++;
 					continue fileloop;
@@ -183,23 +195,28 @@ public class Main {
 			FILES.add(f);
 			System.out.println(f.getAbsolutePath());
 		}
-		System.out.println("Found: " + (found) + " total files.\n\nWith" + excluded + " files excluded, and\n" + jars + " jar files to add to this runtime classpath");
+		System.out.println("Found: " + (found) + " total files.\n\nWith" + excluded + " files excluded, and\n" + jars + " jar files to possibly add to this runtime classpath");
 		Thread.sleep(3000);
-		binDir = new File(workspaceDir.getAbsolutePath() + "/bin");
+		binDir = workspaceDir;
+		if(properties.createGradle()) {
+			binDir = new File(workspaceDir.getAbsolutePath() + "/bin");
+		}
 		
-		((DecompileWriteRule)WRITE_RULES.get("wildermyth")).setOriginCopyDest(new File(binDir.getPath() + "/wildermyth.jar"));
-		((DecompileWriteRule)WRITE_RULES.get("scratchpad")).setOriginCopyDest(new File(binDir.getPath() + "/scratchpad.jar"));
-		((DecompileWriteRule)WRITE_RULES.get("server")).setOriginCopyDest(new File(binDir.getPath() + "/lib/server-1.0.jar"));
-		((DecompileWriteRule)WRITE_RULES.get("gameEngine")).setOriginCopyDest(new File(binDir.getPath() + "/lib/gameEngine-1.0.jar"));
-		((DecompileWriteRule)WRITE_RULES.get("fmod")).setOriginCopyDest(new File(binDir.getPath() + "/lib/fmod-jni.jar"));
-		//((DecompileWriteRule)WRITE_RULES.get("devvotes-client")).setOriginCopyDest(new File(binDir.getPath() + "/lib/devvotes-client.jar"));
+		if(properties.decompile()) {
+			((DecompileWriteRule)WRITE_RULES.get("wildermyth")).setOriginCopyDest(new File(binDir.getPath() + "/wildermyth.jar"));
+			((DecompileWriteRule)WRITE_RULES.get("scratchpad")).setOriginCopyDest(new File(binDir.getPath() + "/scratchpad.jar"));
+			((DecompileWriteRule)WRITE_RULES.get("server")).setOriginCopyDest(new File(binDir.getPath() + "/lib/server-1.0.jar"));
+			((DecompileWriteRule)WRITE_RULES.get("gameEngine")).setOriginCopyDest(new File(binDir.getPath() + "/lib/gameEngine-1.0.jar"));
+			((DecompileWriteRule)WRITE_RULES.get("fmod")).setOriginCopyDest(new File(binDir.getPath() + "/lib/fmod-jni.jar"));
+			//((DecompileWriteRule)WRITE_RULES.get("devvotes-client")).setOriginCopyDest(new File(binDir.getPath() + "/lib/devvotes-client.jar"));
+		}
 		
 		fileLoop:
 		for(File f : FILES) {
 			boolean isModified = false;
 			try {
+				File dest = new File(binDir.getAbsolutePath() + getLocalPath(properties.getSourceDir(), f));
 				if(!f.isDirectory()) {
-					File dest = new File(binDir.getAbsolutePath() + getLocalPath(gameInfo.getGameDir(), f));
 					for(WriteRule writeRule : WRITE_RULES.values()) {
 						if(writeRule.matches(f)) {
 							isModified = true;
@@ -211,14 +228,27 @@ public class Main {
 						}
 					}
 					if(isModified) {
+						copied++;
 						modified++;
 					}
 					else {
-					//System.out.println("copying " + f);
-						FileUtils.copyFile(f, dest);
+						if(dest.exists() && overwriteByDefault) {
+							System.out.println("Overwriting " + dest);
+							copied++;
+							FileUtils.copyFile(f, dest);
+						}
+						else if(dest.exists()){
+							System.out.println("Skipping " + f + " by default because it already exists.");
+						}
+						else {
+							//System.out.println("copying " + f);
+							copied++;
+							FileUtils.copyFile(f, dest);
+						}
+						
 					}
 				}
-				copied++;
+
 			} catch (IOException e) {
 				throw new IOError(e);
 			}
@@ -248,21 +278,6 @@ public class Main {
 			System.err.println("WARNING: " + unmatched.size() + " the following WriteRules not match any files:");
 		}
 		return;
-	}
-	
-	private static boolean confirm(String message, String title, String... options) {
-		if(options.length != 2) {
-			options = new String[] {"Cancel", "Okay"};
-		}
-		return 1 == JOptionPane.showOptionDialog(null, message, title, JOptionPane.DEFAULT_OPTION, JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
-	}
-	
-	private static void cancel(JFrame... jframes) {
-		for(JFrame frame : jframes) {
-			frame.dispose();
-		}
-		System.out.println("User cancelled workspace creation.");
-		System.exit(0);
 	}
 	
 	private static String getLocalPath(File gameDir, File file) {

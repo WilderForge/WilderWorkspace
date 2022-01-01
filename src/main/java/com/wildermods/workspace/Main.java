@@ -16,6 +16,9 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.lang3.StringUtils;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonParser;
 import com.wildermods.workspace.decompile.DecompileWriteRule;
 
 import cuchaz.enigma.classprovider.ClassProvider;
@@ -45,6 +48,8 @@ public class Main {
 	public static final String README = ".*/Wildermyth/readme\\.txt";
 	public static final String PATCHLINE = ".*/Wildermyth/patchline\\.txt";
 	
+	public static final JsonArray DEPENDENCIES;
+	
 	static {
 		EXCLUSIONS.put("logs", ".*/Wildermyth/logs.*");
 		EXCLUSIONS.put("out", ".*/Wildermyth/out.*");
@@ -68,6 +73,12 @@ public class Main {
 				} return null;
 			}}
 		);
+		
+		try {
+			DEPENDENCIES = JsonParser.parseString(new String(IOUtils.resourceToByteArray("/dependencies.json"))).getAsJsonObject().get("dependencies").getAsJsonArray();
+		} catch (Throwable t) {
+			throw new Error(t);
+		}
 	}
 	
 	private static final HashSet<File> FILES = new HashSet<File>();
@@ -141,14 +152,24 @@ public class Main {
 			WRITE_RULES.put("overwriteMods", new ShouldOverwriteWriteRule(properties.overwriteMods(), MODS));
 		}
 		
+		for(JsonElement dependencyElement : DEPENDENCIES) {
+			RemoteResource resource;
+			try {
+				resource = new RemoteResource(dependencyElement.getAsJsonObject());
+			} catch (IOException e) {
+				throw new Error(e);
+			}
+			NEW_RESOURCES.put(resource.name, resource);
+		}
+		
 		if(properties.createGradle()) {
-			NEW_RESOURCES.put(".gitignore", new Resource("gitignore", ".gitignore"));
-			NEW_RESOURCES.put(".gitattributes", new Resource("gitattributes", ".gitattributes"));
-			NEW_RESOURCES.put("build.gradle", new Resource("build.gradle"));
-			NEW_RESOURCES.put("gradlew", new Resource("gradlew"));
-			NEW_RESOURCES.put("gradlew.bat", new Resource("gradlew.bat"));
-			NEW_RESOURCES.put("gradleJar", new Resource("gradle/wrapper/gradle-wrapper", "gradle/wrapper/gradle-wrapper.jar"));
-			NEW_RESOURCES.put("gradleProperties", new Resource("gradle/wrapper/gradle-wrapper.properties"));
+			NEW_RESOURCES.put(".gitignore", new LocalResource("gitignore", ".gitignore", false));
+			NEW_RESOURCES.put(".gitattributes", new LocalResource("gitattributes", ".gitattributes", false));
+			NEW_RESOURCES.put("build.gradle", new LocalResource("build.gradle", false));
+			NEW_RESOURCES.put("gradlew", new LocalResource("gradlew", false));
+			NEW_RESOURCES.put("gradlew.bat", new LocalResource("gradlew.bat", false));
+			NEW_RESOURCES.put("gradleJar", new LocalResource("gradle/wrapper/gradle-wrapper", "gradle/wrapper/gradle-wrapper.jar", false));
+			NEW_RESOURCES.put("gradleProperties", new LocalResource("gradle/wrapper/gradle-wrapper.properties", false));
 		}
 		
 		if(properties.decompile()) {
@@ -263,7 +284,7 @@ public class Main {
 		}
 		for(Resource r : NEW_RESOURCES.values()) {
 			try {
-				r.write(workspaceDir);
+				r.write(workspaceDir, properties.createGradle());
 			} catch (IOException e) {
 				throw new IOError(e);
 			}

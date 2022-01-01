@@ -12,7 +12,7 @@ repositories {
 	mavenCentral()
 }
 
-version = "0.3.0.0"
+version = "0.4.0.0"
 group = "com.wildermods"
 archivesBaseName = "wilderworkspace"
 
@@ -28,8 +28,10 @@ dependencies { //For some reason, dependencies must be specified as shadow and i
 	shadow group: 'cuchaz', name: 'enigma-cli', version: '1.4.7'
 	shadow group: 'commons-io', name: 'commons-io', version: '2.8.0'
 	shadow group: 'org.apache.commons', name: 'commons-text', version: '1.9'
+	shadow group: 'com.google.code.gson', name: 'gson', version: '2.8.7'
 	implementation group: 'cuchaz', name: 'enigma', version: '1.4.7'
 	implementation group: 'cuchaz', name: 'enigma-cli', version: '1.4.7'
 	implementation group: 'commons-io', name: 'commons-io', version: '2.8.0'
 	implementation group: 'org.apache.commons', name: 'commons-text', version: '1.9'
+	implementation group: 'com.google.code.gson', name: 'gson', version: '2.8.7'
 }

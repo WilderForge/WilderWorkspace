@@ -1,1 +1,1 @@
-WilderWorkspace 0.3.0.0
+WilderWorkspace 0.4.0.0

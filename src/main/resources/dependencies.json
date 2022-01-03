@@ -7,6 +7,12 @@
 			"bin":true
 		},
 		{
+			"name": "WilderLoader",
+			"url" : "https://dl.wildermods.com/?user=WilderForge&?project=wilderloader&?version=0.1.0.0&?artifact=wilderloader-0.1.0.0.jar",
+			"dest" : "/wilderloader-0.1.0.0.jar",
+			"bin":true
+		},
+		{
 			"name":"Wildermyth Game Provider",
 			"url": "https://dl.wildermods.com/?user=WilderForge&?project=wildermythgameprovider&?version=1.0.0.0&?artifact=provider-1.0.0.0.jar",
 			"dest": "/fabric/provider-1.0.0.0.jar",

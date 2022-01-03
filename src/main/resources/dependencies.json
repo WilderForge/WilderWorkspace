@@ -8,8 +8,8 @@
 		},
 		{
 			"name":"Wildermyth Game Provider",
-			"url": "https://dl.wildermods.com/?user=gamebuster19901&?project=wildermythgameprovider&?version=0.1.0.0&?artifact=provider-0.1.0.0-all.jar",
-			"dest": "/fabric/provider-0.1.0.0-all.jar",
+			"url": "https://dl.wildermods.com/?user=WilderForge&?project=wildermythgameprovider&?version=1.0.0.0&?artifact=provider-1.0.0.0.jar",
+			"dest": "/fabric/provider-1.0.0.0.jar",
 			"bin":true
 		},
 		{

@@ -65,6 +65,7 @@ public abstract class Installation<I extends InstallationProperties<G>, G extend
 	
 	public void setupWriteRulesAndResources() {
 		declareExclusions();
+		declareForcedInclusions();
 		declareWriteRules();
 		declareResources();
 		declareDependencies();

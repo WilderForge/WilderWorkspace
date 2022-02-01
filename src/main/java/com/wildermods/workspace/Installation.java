@@ -43,7 +43,9 @@ public abstract class Installation<I extends InstallationProperties<G>, G extend
 			System.out.println(installationProperties.getGameInfo().getName() + " version "  + installationProperties.getGameInfo().getVersion());
 			installImpl();
 		}
-		throw new IllegalStateException("Installation properties were invalid!");
+		else {
+			throw new IllegalStateException("Installation properties were invalid!\n\n");
+		}
 	}
 
 	public void preCheck() {
@@ -66,6 +68,7 @@ public abstract class Installation<I extends InstallationProperties<G>, G extend
 		declareWriteRules();
 		declareResources();
 		declareDependencies();
+		modifyWriteRules();
 	}
 	
 	/**
@@ -201,14 +204,17 @@ public abstract class Installation<I extends InstallationProperties<G>, G extend
 				throw new IOError(e);
 			}
 		}
-		HashSet<WriteRule> unmatched = new HashSet<WriteRule>();
-		for(WriteRule writeRule : WRITE_RULES.values()) {
-			if(!writeRule.matchFound()) {
+		HashSet<Entry<String, WriteRule>> unmatched = new HashSet<Entry<String, WriteRule>>();
+		for(Entry<String, WriteRule> writeRule : WRITE_RULES.entrySet()) {
+			if(!writeRule.getValue().matchFound()) {
 				unmatched.add(writeRule);
 			}
 		}
 		if(unmatched.size() > 0) {
 			System.err.println("WARNING: " + unmatched.size() + " the following WriteRules not match any files:");
+			for(Entry<String, WriteRule> wr : unmatched) {
+				System.err.println(wr.getKey());
+			}
 		}
 		return;
 	}

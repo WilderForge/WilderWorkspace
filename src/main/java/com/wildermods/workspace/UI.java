@@ -36,7 +36,7 @@ public interface UI<I extends InstallationProperties<G>, G extends GameInfo> ext
 	 * before running.
 	 * 
 	 * If you do not wish to have a UI, you can just create and pass an implementation of 
-	 * InstallationProperties into {@link Main#main(InstallationProperties)}.
+	 * InstallationProperties into {@link Main#install(InstallationProperties)}.
 	 * 
 	 * @param args the arguments used when calling your main class.
 	 * @return an instance of UI.

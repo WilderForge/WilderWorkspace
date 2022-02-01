@@ -107,6 +107,12 @@ public abstract class Installation<I extends InstallationProperties<G>, G extend
 	public abstract HashMap<String, RemoteResource> declareDependencies();
 	
 	/**
+	 * Used to change the directory of declared writerules inside of installImpl().
+	 * Useful if you cannot determine some data for a write rule until copy time.
+	 */
+	public abstract void modifyWriteRules();
+	
+	/**
 	 * Create your modded installation here.
 	 * 
 	 * This default implementation should be enough for most games, but if it isn't, you'll have to create your own implementation.
@@ -221,12 +227,6 @@ public abstract class Installation<I extends InstallationProperties<G>, G extend
 		}
 		return;
 	}
-	
-	/**
-	 * Used to change the directory of declared writerules inside of installImpl().
-	 * Useful if you cannot determine some data for a write rule until copy time.
-	 */
-	public abstract void modifyWriteRules();
 	
 	public ClassProvider getDecompilationClasspath() throws IOException {
 		HashSet<ClassProvider> classProviders = new HashSet<ClassProvider>();

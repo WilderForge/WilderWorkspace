@@ -3,7 +3,7 @@ package com.wildermods.workspace.decompile;
 import java.io.File;
 import java.io.IOException;
 
-import com.wildermods.workspace.Main;
+import com.wildermods.workspace.Installation;
 
 import cuchaz.enigma.Enigma;
 import cuchaz.enigma.EnigmaProject;
@@ -17,18 +17,20 @@ import cuchaz.enigma.source.SourceSettings;
 
 public class Decompiler {
 	static final Enigma project = Enigma.create();
+	private final Installation installation;
 	private final File jar;
 	private File decompJar;
 	
-	public Decompiler(File jar) {
+	public Decompiler(Installation installation, File jar) {
 		this.jar = jar;
+		this.installation = installation;
 	}
 	
 	public Throwable decompile() {
 		try {
-			decompJar = getNewOutFile(decompJar);
+			decompJar = getNewOutFile(installation);
 			ProgressListener progressListener = new Command.ConsoleProgressListener();
-			EnigmaProject project = Enigma.create().openJar(jar.toPath(), Main.getDecompilationClasspath(), progressListener);
+			EnigmaProject project = Enigma.create().openJar(jar.toPath(), installation.getDecompilationClasspath(), progressListener);
 			project.exportRemappedJar(progressListener).decompile(progressListener, new DecompilerService() {
 				@Override
 				public cuchaz.enigma.source.Decompiler create(ClassProvider classProvider, SourceSettings settings) {
@@ -41,8 +43,8 @@ public class Decompiler {
 		}
 	}
 	
-	private static File getNewOutFile(File oldOutDir) throws IOException {
-		File outputDir = new File(Main.binDir.getAbsolutePath() + File.separator + "decomp");
+	private static File getNewOutFile(Installation installation) throws IOException {
+		File outputDir = new File(installation.getInstallationProperties().getBinDir().getAbsolutePath() + File.separator + "decomp");
 		if(!outputDir.exists()) {
 			outputDir.mkdirs();
 		}

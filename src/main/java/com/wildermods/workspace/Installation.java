@@ -108,6 +108,8 @@ public abstract class Installation<I extends InstallationProperties<G>, G extend
 	/**
 	 * Create your modded installation here.
 	 * 
+	 * This default implementation should be enough for most games, but if it isn't, you'll have to create your own implementation.
+	 * 
 	 * @throws InterruptedException 
 	 */
 	public void installImpl() throws InterruptedException {

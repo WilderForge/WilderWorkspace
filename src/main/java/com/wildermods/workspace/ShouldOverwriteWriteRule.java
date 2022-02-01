@@ -5,6 +5,11 @@ import java.io.IOException;
 
 import org.apache.commons.io.FileUtils;
 
+
+/**
+ * If shouldOverwrite is true, then if a file is found at its destination, it will be overwritten
+ * otherwise, copying for that file will be skipped.
+ */
 public class ShouldOverwriteWriteRule extends WriteRule {
 
 	final boolean shouldOverwrite;

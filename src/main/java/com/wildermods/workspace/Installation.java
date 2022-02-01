@@ -14,8 +14,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.lang3.StringUtils;
 
-import com.google.gson.JsonArray;
-
 import cuchaz.enigma.classprovider.ClassProvider;
 import cuchaz.enigma.classprovider.ClasspathClassProvider;
 import cuchaz.enigma.classprovider.CombiningClassProvider;
@@ -27,7 +25,7 @@ public abstract class Installation<I extends InstallationProperties<G>, G extend
 	protected final ConcurrentHashMap<String, String> FORCE_INCLUSIONS = new ConcurrentHashMap<String, String>();
 	protected final ConcurrentHashMap<String, WriteRule> WRITE_RULES = new ConcurrentHashMap<String, WriteRule>();
 	protected final ConcurrentHashMap<String, Resource> NEW_RESOURCES = new ConcurrentHashMap<String, Resource>();
-	protected JsonArray DEPENDENCIES;
+	protected RemoteResource[] dependencies;
 	
 	protected final HashSet<File> FILES = new HashSet<File>();
 	protected final HashSet<Path> JARS = new HashSet<Path>();
@@ -67,6 +65,7 @@ public abstract class Installation<I extends InstallationProperties<G>, G extend
 		declareExclusions();
 		declareWriteRules();
 		declareResources();
+		declareDependencies();
 	}
 	
 	/**
@@ -95,6 +94,13 @@ public abstract class Installation<I extends InstallationProperties<G>, G extend
 	 * Declare resources to add that normally don't exist in the vanilla game.
 	 */
 	public abstract void declareResources();
+	
+	/**
+	 * Declare dependencies that are required for your game, but which cannot be obtained until copy time.
+	 * 
+	 * @return a HashMap of {@link RemoteResource}s to download. The generic argument String is the name of the remote resource.
+	 */
+	public abstract HashMap<String, RemoteResource> declareDependencies();
 	
 	/**
 	 * Create your modded installation here.
@@ -208,7 +214,7 @@ public abstract class Installation<I extends InstallationProperties<G>, G extend
 	}
 	
 	/**
-	 * Used to change the directory of declared writerules inside of installImpl.
+	 * Used to change the directory of declared writerules inside of installImpl().
 	 * Useful if you cannot determine some data for a write rule until copy time.
 	 */
 	public abstract void modifyWriteRules();

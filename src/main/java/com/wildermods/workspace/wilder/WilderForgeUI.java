@@ -62,26 +62,20 @@ public class WilderForgeUI implements UI<WilderInstallationProperties, Wildermyt
 	private JCheckBox decompile;
 
 	/**
-	 * Launch the application.
+	 * Launch the UI.
 	 */
-	public static void main(String[] args) {
+	public WilderForgeUI (String[] args) {
+		initialize();
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
-					WilderForgeUI window = new WilderForgeUI();
+					WilderForgeUI window = WilderForgeUI.this;
 					window.frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
 				}
 			}
 		});
-	}
-
-	/**
-	 * Create the application.
-	 */
-	public WilderForgeUI() {
-		initialize();
 	}
 
 	/**
@@ -193,7 +187,7 @@ public class WilderForgeUI implements UI<WilderInstallationProperties, Wildermyt
 		createButton.addActionListener((listener) -> {
 			if (updateState()) {
 				try {
-					Main.main(this);
+					Main.install(this);
 				} catch (InterruptedException e) {
 					throw new Error(e);
 				}
@@ -618,6 +612,9 @@ public class WilderForgeUI implements UI<WilderInstallationProperties, Wildermyt
 
 	@Override
 	public boolean isValid() {
+		for(String e : checkErrors()) {
+			System.err.println(e);
+		}
 		return checkErrors().length == 0;
 	}
 

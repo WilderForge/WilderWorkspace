@@ -55,11 +55,14 @@ public interface UI<I extends InstallationProperties<G>, G extends GameInfo> ext
 		if(uiClassProperty == null) {
 			uiClass = WilderForgeUI.class;
 		}
-		if(uiClass != null) {
+		if(uiClass == null) {
 			uiClass = (Class<? extends UI>) Class.forName(uiClassProperty);
+		}
+		if(uiClass == null) {
+			throw new ClassNotFoundException("UI class not specified. Specify a UI by setting the system argument 'WWUI' to the fully qualified name of your UI class, or call Main.main(InstallationProperties) if you do not have a UI");
 		}
 		Constructor c = uiClass.getConstructor(String[].class);
 		c.setAccessible(true);
-		return (UI) c.newInstance((Object[])args);
+		return (UI) c.newInstance(new Object[] {args});
 	}
 }

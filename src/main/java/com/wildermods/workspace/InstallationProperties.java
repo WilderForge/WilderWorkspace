@@ -38,7 +38,10 @@ public interface InstallationProperties<G extends GameInfo> {
 	public File getDestDir();
 	
 	/**
-	 * @return The location of the game's dependencies.
+	 * @return The location of the game. If creating a gradle workspace,
+	 * it should be in 'getDestDir() + "/bin"'
+	 * 
+	 * Otherwise, it should just be the destination directory.
 	 */
 	public default File getBinDir() {
 		if(createGradle()) {

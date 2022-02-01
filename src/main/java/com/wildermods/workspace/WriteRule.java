@@ -11,7 +11,7 @@ public abstract class WriteRule {
 		this.regex = regex;
 	}
 	
-	public abstract Throwable write(File source, File dest);
+	public abstract Throwable write(Installation installation, File source, File dest);
 	
 	public boolean matches(File source) {
 		if(source.getAbsolutePath().matches(regex)) {

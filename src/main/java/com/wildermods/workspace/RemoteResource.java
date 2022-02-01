@@ -11,9 +11,24 @@ import com.google.gson.JsonObject;
 
 public class RemoteResource implements Resource {
 
+	/**
+	 * The name of the resource
+	 */
 	public final String name;
+	
+	/**
+	 * The URL to obtain the resource from
+	 */
 	private final URL url;
+	
+	/**
+	 * The destination to copy the resource from
+	 */
 	private final String destPath;
+	
+	/**
+	 * True if the resource should be placed in the bin directory of a gradle workspace
+	 */
 	private final boolean useBinDir;
 	
 	public RemoteResource(JsonElement resourceDefinition) throws IOException {

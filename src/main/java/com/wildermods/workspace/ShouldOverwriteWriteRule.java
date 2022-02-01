@@ -5,6 +5,11 @@ import java.io.IOException;
 
 import org.apache.commons.io.FileUtils;
 
+
+/**
+ * If shouldOverwrite is true, then if a file is found at its destination, it will be overwritten
+ * otherwise, copying for that file will be skipped.
+ */
 public class ShouldOverwriteWriteRule extends WriteRule {
 
 	final boolean shouldOverwrite;
@@ -15,7 +20,7 @@ public class ShouldOverwriteWriteRule extends WriteRule {
 	}
 
 	@Override
-	public Throwable write(File source, File dest) {
+	public Throwable write(Installation installation, File source, File dest) {
 		if(shouldOverwrite || !dest.exists()) {
 			try {
 				System.out.println("Overwriting " + dest);

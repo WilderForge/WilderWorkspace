@@ -5,6 +5,7 @@ import java.io.IOException;
 
 import org.apache.commons.io.FileUtils;
 
+import com.wildermods.workspace.Installation;
 import com.wildermods.workspace.WriteRule;
 
 public class DecompileWriteRule extends WriteRule {
@@ -21,9 +22,9 @@ public class DecompileWriteRule extends WriteRule {
 	}
 
 	@Override
-	public Throwable write(File origin, File sourceDest) {
+	public Throwable write(Installation installation, File origin, File sourceDest) {
 		System.out.println("Decompiling " + origin.getName() + " to " + sourceDest);
-		Throwable t = new Decompiler(origin).decompile();
+		Throwable t = new Decompiler(installation, origin).decompile();
 		if(t != null) {
 			return t;
 		}

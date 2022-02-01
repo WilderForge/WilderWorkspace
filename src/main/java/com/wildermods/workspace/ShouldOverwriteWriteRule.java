@@ -15,7 +15,7 @@ public class ShouldOverwriteWriteRule extends WriteRule {
 	}
 
 	@Override
-	public Throwable write(File source, File dest) {
+	public Throwable write(Installation installation, File source, File dest) {
 		if(shouldOverwrite || !dest.exists()) {
 			try {
 				System.out.println("Overwriting " + dest);

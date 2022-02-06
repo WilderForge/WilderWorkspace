@@ -26,8 +26,8 @@
 		},
 		{
 			"name":"Tiny Remapper",
-			"url" : "https://maven.fabricmc.net/net/fabricmc/tiny-remapper/0.6.0/tiny-remapper-0.6.0.jar",
-			"dest": "/fabric/tiny-remapper-0.6.0.jar",
+			"url" : "https://maven.fabricmc.net/net/fabricmc/tiny-remapper/0.8.1/tiny-remapper-0.8.1.jar",
+			"dest": "/fabric/tiny-remapper-0.8.1.jar",
 			"bin":true
 		},
 		{

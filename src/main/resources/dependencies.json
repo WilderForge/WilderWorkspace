@@ -8,8 +8,8 @@
 		},
 		{
 			"name": "WilderLoader",
-			"url" : "https://dl.wildermods.com/?user=WilderForge&?project=wilderloader&?version=0.2.0.1&?artifact=wilderloader-0.2.0.1.jar",
-			"dest" : "/wilderloader-0.2.0.1.jar",
+			"url" : "https://dl.wildermods.com/?user=WilderForge&?project=wilderloader&?version=0.2.0.2&?artifact=wilderloader-0.2.0.2.jar",
+			"dest" : "/wilderloader-0.2.0.2.jar",
 			"bin":true
 		},
 		{

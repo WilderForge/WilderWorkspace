@@ -16,7 +16,6 @@ import cuchaz.enigma.source.Decompilers;
 import cuchaz.enigma.source.SourceSettings;
 
 public class Decompiler {
-	static final Enigma project = Enigma.create();
 	private final Installation installation;
 	private final File jar;
 	private File decompJar;

@@ -7,13 +7,10 @@ import java.util.HashMap;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonParser;
 import com.wildermods.workspace.Installation;
 import com.wildermods.workspace.LocalResource;
 import com.wildermods.workspace.Main;
-import com.wildermods.workspace.RemoteResource;
+import com.wildermods.workspace.Dependency;
 import com.wildermods.workspace.ShouldOverwriteWriteRule;
 import com.wildermods.workspace.WriteRule;
 import com.wildermods.workspace.decompile.DecompileWriteRule;
@@ -118,35 +115,22 @@ public class WilderInstallation extends Installation<WilderInstallationPropertie
 			NEW_RESOURCES.put("gradleProperties", new LocalResource("gradle/wrapper/gradle-wrapper.properties", false));
 		}
 		
-		HashMap<String, RemoteResource> dependencies = declareDependencies();
+		HashMap<String, Dependency> dependencies = declareDependencies();
 		
-		for(RemoteResource resource : dependencies.values()) {
-			NEW_RESOURCES.put(resource.name, resource);
+		for(Dependency resource : dependencies.values()) {
+			NEW_RESOURCES.put(resource.getName(), resource);
 		}
 		
 	}
 	
 
 	@Override
-	public HashMap<String, RemoteResource> declareDependencies() {
-		JsonArray dependenciesJsonArray = new JsonArray();
-		final HashMap<String, RemoteResource> dependencies = new HashMap<String, RemoteResource>();
-		
-		try {
-			dependenciesJsonArray = JsonParser.parseString(new String(IOUtils.resourceToByteArray("/dependencies.json"))).getAsJsonObject().get("dependencies").getAsJsonArray();
-		} catch (Throwable t) {
-			throw new Error(t);
+	public HashMap<String, Dependency> declareDependencies() {
+		final HashMap<String, Dependency> dependencies = new HashMap<String, Dependency>();
+		for(WilderForgeDependency dep : WilderForgeDependency.values()) {
+			dependencies.put(dep.getName(), dep);
 		}
-		
-		for(JsonElement dependencyElement : dependenciesJsonArray) {
-			RemoteResource resource;
-			try {
-				resource = new RemoteResource(dependencyElement.getAsJsonObject());
-			} catch (IOException e) {
-				throw new Error(e);
-			}
-			dependencies.put(resource.name, resource);
-		}
+
 		return dependencies;
 	}
 

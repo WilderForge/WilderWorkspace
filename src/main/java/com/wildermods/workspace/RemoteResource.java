@@ -9,6 +9,7 @@ import org.apache.commons.io.FileUtils;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+@Deprecated //expect this to be removed, create your own implementation if needed.
 public class RemoteResource implements Resource {
 
 	/**

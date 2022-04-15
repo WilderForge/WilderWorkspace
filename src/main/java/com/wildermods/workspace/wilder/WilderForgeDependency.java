@@ -143,7 +143,6 @@ public enum WilderForgeDependency implements Dependency, Resource {
 				}
 			} catch (IOException e) {
 				try {
-					e.printStackTrace();
 					System.out.println("There was either no gradle.properties in resources, or there was an error reading it. Looking for gradle.properties in devspace.");
 					File gradleProperties = new File("./gradle.properties");
 					if(gradleProperties.exists()) {

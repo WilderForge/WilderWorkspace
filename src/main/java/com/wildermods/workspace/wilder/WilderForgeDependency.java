@@ -30,8 +30,8 @@ public enum WilderForgeDependency implements Dependency, Resource {
 	
 	GAME_PROVIDER("Wildermyth Game Provider",
 		"@gameProviderVersion@",
-		"https://dl.wildermods.com/?user=WilderForge&?project=wildermythgameprovider&?version=1.1.0.2&?artifact=provider-1.1.0.2.jar",
-		"/fabric/provider-1.1.0.2.jar"),
+		"https://dl.wildermods.com/?user=WilderForge&?project=wildermythgameprovider&?version=@gameProviderVersion@&?artifact=provider-@gameProviderVersion@.jar",
+		"/fabric/provider-@gameProviderVersion@.jar"),
 	
 	TINY_MAPPINGS_PARSER("Tiny Mappings Parser",
 		"@tinyMappingsVersion@",

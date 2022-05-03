@@ -18,6 +18,14 @@ import com.wildermods.workspace.Resource;
 
 public enum WilderForgeDependency implements Dependency, Resource {
 	
+	WILDER_WORKSPACE("Wilder Workspace",
+		"@workspaceVersion@",
+		"",
+		"",
+		false,
+		false
+	),
+	
 	FABRIC_LOADER("Fabric Loader", 
 		"@fabricLoaderVersion@", 
 		"https://maven.fabricmc.net/net/fabricmc/fabric-loader/@fabricLoaderVersion@/fabric-loader-@fabricLoaderVersion@.jar", 
@@ -107,19 +115,21 @@ public enum WilderForgeDependency implements Dependency, Resource {
 	private final String dest;
 	private final boolean isBin;
 	private final Pattern obtainVersionRegex;
+	public final boolean ignored;
 	
 	private static final Pattern versionRegex = Pattern.compile("@.*?@");
 	
 	private WilderForgeDependency(String name, String version, String url, String dest) {
-		this(name, version, url, dest, true);
+		this(name, version, url, dest, true, false);
 	}
 	
-	private WilderForgeDependency(String name, String version, String url, String dest, boolean isBin) {
+	private WilderForgeDependency(String name, String version, String url, String dest, boolean isBin, boolean ignored) {
 		this.name = name;
 		this.version = version;
 		this.url = url;
 		this.dest = dest;
 		this.isBin = isBin;
+		this.ignored = ignored;
 		obtainVersionRegex = Pattern.compile(version.replace("@",  "") + " = (?<version>.*)");
 	}
 	

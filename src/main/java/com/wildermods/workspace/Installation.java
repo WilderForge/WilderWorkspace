@@ -14,11 +14,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.lang3.StringUtils;
 
-import cuchaz.enigma.classprovider.ClassProvider;
-import cuchaz.enigma.classprovider.ClasspathClassProvider;
-import cuchaz.enigma.classprovider.CombiningClassProvider;
-import cuchaz.enigma.classprovider.JarClassProvider;
-
 public abstract class Installation<I extends InstallationProperties<G>, G extends GameInfo> {
 	
 	protected final ConcurrentHashMap<String, String> EXCLUSIONS = new ConcurrentHashMap<String, String>();
@@ -27,7 +22,7 @@ public abstract class Installation<I extends InstallationProperties<G>, G extend
 	protected final ConcurrentHashMap<String, Resource> NEW_RESOURCES = new ConcurrentHashMap<String, Resource>();
 	protected Dependency[] dependencies;
 	
-	protected final HashSet<File> FILES = new HashSet<File>();
+	protected final HashSet<Path> FILES = new HashSet<Path>();
 	protected final HashSet<Path> JARS = new HashSet<Path>();
 	
 	protected final I installationProperties;
@@ -57,8 +52,8 @@ public abstract class Installation<I extends InstallationProperties<G>, G extend
 	        if(dot != -1) { version = version.substring(0, dot); }
 	    } 
 	    int versionNo = Integer.parseInt(version);
-	    if(versionNo < 16) {
-	    	System.err.println("WilderWorkspace can only run on Java 16 or later, re-run this jar in a Java 16 environment. Don't worry though, the project that wilderworkspace creates will work with Java 8 or later!");
+	    if(versionNo < 17) {
+	    	System.err.println("WilderWorkspace can only run on Java 17 or later, re-run this jar in a Java 17 environment. Don't worry though, the project that wilderworkspace creates will work with Java 8 or later!");
 	    	System.exit(-1);
 	    }
 	}
@@ -127,7 +122,7 @@ public abstract class Installation<I extends InstallationProperties<G>, G extend
 		int excluded = 0;
 		int copied = 0;
 		int modified = 0;
-		HashMap<File, Throwable> errors = new HashMap<File, Throwable>();
+		HashMap<Path, Throwable> errors = new HashMap<Path, Throwable>();
 		fileloop:
 		while(files.hasNext()) {
 			found++;
@@ -149,25 +144,27 @@ public abstract class Installation<I extends InstallationProperties<G>, G extend
 				jars++;
 				JARS.add(f.toPath());
 			}
-			FILES.add(f);
+			FILES.add(f.toPath());
 			System.out.println(f.getAbsolutePath());
 		}
 		System.out.println("Found: " + (found) + " total files.\n\nWith" + excluded + " files excluded, and\n" + jars + " jar files to possibly add to this runtime classpath");
 		Thread.sleep(3000);
-		File binDir = installationProperties.getBinDir();
 		
 		fileLoop:
-		for(File f : FILES) {
+		for(Path p : FILES) {
+			File f = p.toFile();
 			boolean isModified = false;
 			try {
-				File dest = new File(binDir.getAbsolutePath() + getLocalPath(installationProperties.getSourceDir(), f));
+
+				Path dest = installationProperties.getBinPath().resolve(getLocalPath(installationProperties.getSourcePath(), p));
+				
 				if(!f.isDirectory()) {
 					for(WriteRule writeRule : WRITE_RULES.values()) {
-						if(writeRule.matches(f)) {
+						if(writeRule.matches(p)) {
 							isModified = true;
-							Throwable t = writeRule.write(this, f, dest);
+							Throwable t = writeRule.write(this, p, dest);
 							if(t != null) {
-								errors.put(f, t);
+								errors.put(p, t);
 								continue fileLoop;
 							}
 						}
@@ -177,18 +174,18 @@ public abstract class Installation<I extends InstallationProperties<G>, G extend
 						modified++;
 					}
 					else {
-						if(dest.exists() && installationProperties.overwriteGame()) {
+						if(dest.toFile().exists() && installationProperties.overwriteGame()) {
 							System.out.println("Overwriting " + dest);
 							copied++;
-							FileUtils.copyFile(f, dest);
+							FileUtils.copyFile(f, dest.toFile());
 						}
-						else if(dest.exists()){
-							System.out.println("Skipping " + f + " by default because it already exists.");
+						else if(dest.toFile().exists()){
+							System.out.println("Skipping " + dest + " by default because it already exists.");
 						}
 						else {
 							//System.out.println("copying " + f);
 							copied++;
-							FileUtils.copyFile(f, dest);
+							FileUtils.copyFile(f, dest.toFile());
 						}
 						
 					}
@@ -201,7 +198,7 @@ public abstract class Installation<I extends InstallationProperties<G>, G extend
 		System.out.println("Copied " + copied + " files to workspace (" + modified + " of which were modified with custom writerules)");
 		if(errors.size()!= 0) {
 			System.err.println(errors.size() + " files failed to write correctly:");
-			for(Entry<File, Throwable> entry : errors.entrySet()) {
+			for(Entry<Path, Throwable> entry : errors.entrySet()) {
 				System.err.println("Could not write file " + entry.getKey() + ":");
 				entry.getValue().printStackTrace(System.err);
 			}
@@ -228,25 +225,12 @@ public abstract class Installation<I extends InstallationProperties<G>, G extend
 		return;
 	}
 	
-	public ClassProvider getDecompilationClasspath() throws IOException {
-		HashSet<ClassProvider> classProviders = new HashSet<ClassProvider>();
-		classProviders.add(new ClasspathClassProvider());
-		for(Path jarFile : JARS) {
-			System.out.println(jarFile + " added to classpath");
-			classProviders.add(new JarClassProvider(jarFile));
-		}
-		return new CombiningClassProvider(classProviders.toArray(new ClassProvider[]{}));
-	}
-	
-	public final InstallationProperties getInstallationProperties() {
+	public final I getInstallationProperties() {
 		return installationProperties;
 	}
 	
-	/**
-	 * Internal
-	 */
-	protected static final String getLocalPath(File gameDir, File file) {
-		return StringUtils.replaceOnce(file.getAbsolutePath(), gameDir.getAbsolutePath(), "");
+	protected static final String getLocalPath(Path gameDir, Path file) {
+		return "." + StringUtils.replaceOnce(file.toFile().getAbsolutePath(), gameDir.toFile().getAbsolutePath(), "");
 	}
 	
 }

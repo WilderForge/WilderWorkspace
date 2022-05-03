@@ -88,8 +88,6 @@ public class DecompileWriteRule<Decompiler extends LoomDecompiler> extends Write
 		LineNumberRemapper remapper = new LineNumberRemapper();
 		remapper.readMappings(linemap.toFile());
 		try {
-			FileSystemUtil.Delegate inFileSystem = FileSystemUtil.getJarFileSystem(jarToRemap.toFile(), true);
-			FileSystemUtil.Delegate outFileSystem = FileSystemUtil.getJarFileSystem(remappedJarDest.toFile(), true); 
 			ThreadedSimpleProgressLogger logger = new ThreadedSimpleProgressLogger(new ConsumerLogger());
 			remapper.process(logger, jarToRemap, remappedJarDest);
 		}

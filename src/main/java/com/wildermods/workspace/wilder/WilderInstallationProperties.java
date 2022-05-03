@@ -6,6 +6,7 @@ import java.io.File;
 import java.nio.file.FileSystemException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.NotDirectoryException;
+import java.nio.file.Path;
 import java.util.HashMap;
 
 import com.wildermods.workspace.Installation;
@@ -34,6 +35,14 @@ public interface WilderInstallationProperties extends InstallationProperties<Wil
 	
 	public File getSourceDir();
 	public File getDestDir();
+	public default Path getSourcePath() {
+		return getSourceDir().toPath();
+	}
+	public default Path getDestPath() {
+		return getDestDir().toPath();
+	}
+	
+	
 	@Override
 	public WildermythGameInfo getGameInfo();
 	public default Version getGameVersion() {return getGameInfo().getVersion();};

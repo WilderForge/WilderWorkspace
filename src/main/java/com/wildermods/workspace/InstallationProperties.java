@@ -1,6 +1,7 @@
 package com.wildermods.workspace;
 
 import java.io.File;
+import java.nio.file.Path;
 
 public interface InstallationProperties<G extends GameInfo> {
 	
@@ -32,10 +33,18 @@ public interface InstallationProperties<G extends GameInfo> {
 	 */
 	public File getSourceDir();
 	
+	public default Path getSourcePath() {
+		return getSourceDir().toPath();
+	}
+	
 	/**
 	 * @return A directory to install the modded version of your game.
 	 */
 	public File getDestDir();
+	
+	public default Path getDestPath() {
+		return getDestDir().toPath();
+	}
 	
 	/**
 	 * @return The location of the game. If creating a gradle workspace,
@@ -48,6 +57,10 @@ public interface InstallationProperties<G extends GameInfo> {
 			return new File(getDestDir() + "/bin");
 		}
 		return getDestDir();
+	}
+	
+	public default Path getBinPath() {
+		return getBinDir().toPath();
 	}
 	
 }

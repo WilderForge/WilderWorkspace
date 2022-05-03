@@ -105,6 +105,12 @@ public enum WilderForgeDependency implements Dependency, Resource {
 		"@gsonVersion@",
 		"https://repo.maven.apache.org/maven2/com/google/code/gson/gson/@gsonVersion@/gson-@gsonVersion@.jar",
 		"/fabric/gson-@gsonVersion@.jar"
+	),
+	
+	FABRIC_FERNFLOWER("fernflower",
+		"@fernflowerVersion@",
+		"https://maven.fabricmc.net/net/fabricmc/fabric-fernflower/@fernFlowerVersion@@/fabric-fernflower-@fernFlowerVersion@.jar",
+		"/fabric/fabric-fernflower-@fernFlowerVersion@.jar"
 	)
 	
 	;

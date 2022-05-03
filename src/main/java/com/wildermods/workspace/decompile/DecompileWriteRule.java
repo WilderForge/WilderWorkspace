@@ -9,7 +9,6 @@ import com.wildermods.workspace.WriteRule;
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.decompilers.LineNumberRemapper;
-import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.gradle.ThreadedSimpleProgressLogger;
 
 public class DecompileWriteRule<Decompiler extends LoomDecompiler> extends WriteRule {

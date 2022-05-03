@@ -29,11 +29,13 @@ dependencies { //For some reason, dependencies must be specified as shadow and i
 	shadow group: 'org.apache.commons', name: 'commons-text', version: commonsTextVersion
 	shadow group: 'com.google.code.gson', name: 'gson', version: gsonVersion
 	shadow group: 'org.slf4j', name: 'slf4j-api', version: slf4jVersion
+	shadow group: 'net.fabricmc', name: 'fabric-fernflower', version: fernFlowerVersion
 	implementation group: 'net.fabricmc', name: 'fabric-loom', version: loomVersion
 	implementation group: 'commons-io', name: 'commons-io', version: commonsIOVersion
 	implementation group: 'org.apache.commons', name: 'commons-text', version: commonsTextVersion
 	implementation group: 'com.google.code.gson', name: 'gson', version: gsonVersion
 	implementation group: 'org.slf4j', name: 'slf4j-api', version: slf4jVersion
+	implementation group: 'net.fabricmc', name: 'fabric-fernflower', version: fernFlowerVersion
 }
 
 import org.apache.tools.ant.filters.ReplaceTokens

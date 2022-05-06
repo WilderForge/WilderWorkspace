@@ -108,8 +108,8 @@ public enum WilderForgeDependency implements Dependency, Resource {
 	),
 	
 	FABRIC_FERNFLOWER("fernflower",
-		"@fernflowerVersion@",
-		"https://maven.fabricmc.net/net/fabricmc/fabric-fernflower/@fernFlowerVersion@@/fabric-fernflower-@fernFlowerVersion@.jar",
+		"@fernFlowerVersion@",
+		"https://maven.fabricmc.net/net/fabricmc/fabric-fernflower/@fernFlowerVersion@/fabric-fernflower-@fernFlowerVersion@.jar",
 		"/fabric/fabric-fernflower-@fernFlowerVersion@.jar"
 	)
 	

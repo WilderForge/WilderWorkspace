@@ -9,14 +9,14 @@ import com.wildermods.workspace.WriteRule;
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
 import net.fabricmc.loom.decompilers.LineNumberRemapper;
+import net.fabricmc.loom.util.FileSystemUtil;
+import net.fabricmc.loom.util.FileSystemUtil.Delegate;
 import net.fabricmc.loom.util.gradle.ThreadedSimpleProgressLogger;
 
 public class DecompileWriteRule<Decompiler extends LoomDecompiler> extends WriteRule {
 
 	private Decompiler decompiler;
-	private Path source;
 	private Path decompFolder;
-	private String name;
 	private DecompilationMetadata metaData;
 	
 	public DecompileWriteRule(Decompiler decompiler, String regex) {
@@ -24,18 +24,8 @@ public class DecompileWriteRule<Decompiler extends LoomDecompiler> extends Write
 		this.decompiler = decompiler;
 	}
 	
-	public DecompileWriteRule<Decompiler> setSource(Path source) {
-		this.source = source;
-		return this;
-	}
-	
 	public DecompileWriteRule<Decompiler> setDecompFolder(Path dest) {
 		decompFolder = dest;
-		return this;
-	}
-	
-	public DecompileWriteRule<Decompiler> setName(String name) {
-		this.name = name;
 		return this;
 	}
 	
@@ -48,24 +38,15 @@ public class DecompileWriteRule<Decompiler extends LoomDecompiler> extends Write
 	@SuppressWarnings("rawtypes")
 	public Throwable write(Installation installation, Path origin, Path sourceDest) {
 		
-		Path linemapDest = decompFolder.resolve("linemaps").resolve(origin.getFileName() + ".linemap");
-		Path decompDest = decompFolder.resolve(origin.getFileName());
-		
-		System.out.println("Decompiling " + origin.getFileName() + " to " +
-		sourceDest);
-
-		
-		if(source == null) {
-			return new NullPointerException("source was not set");
-		}
-		
 		if(decompFolder == null) {
 			return new NullPointerException("decompFolder was not set");
 		}
 		
-		if(name == null) {
-			return new NullPointerException("name was not set");
-		}
+		Path linemapDest = decompFolder.resolve("linemaps").resolve(origin.getFileName() + ".linemap");
+		Path decompDest = decompFolder.resolve(origin.getFileName());
+		
+		System.out.println("Decompiling " + origin.getFileName() + " to " +
+		decompDest);
 		
 		if(metaData == null) {
 			return new NullPointerException("metaData was not set");

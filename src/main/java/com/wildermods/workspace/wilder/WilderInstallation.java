@@ -168,11 +168,11 @@ public class WilderInstallation extends Installation<WilderInstallationPropertie
 			Path linemap = decomp.resolve("linemaps");
 			linemap.toFile().mkdirs();
 			
-			((DecompileWriteRule)WRITE_RULES.get("wildermyth")).setSource(binDir.resolve("wildermyth.jar")).setDecompFolder(decomp).setName("wildermyth").setMetaData(metaData);
-			((DecompileWriteRule)WRITE_RULES.get("scratchpad")).setSource(binDir.resolve("/scratchpad.jar")).setDecompFolder(decomp).setName("scratchpad").setMetaData(metaData);
-			((DecompileWriteRule)WRITE_RULES.get("server")).setSource(binDir.resolve("/lib/server-1.0.jar")).setDecompFolder(decomp).setName("server-1.0").setMetaData(metaData);
-			((DecompileWriteRule)WRITE_RULES.get("gameEngine")).setSource(binDir.resolve("/lib/gameEngine-1.0.jar")).setDecompFolder(decomp).setName("gameEngine-1.0").setMetaData(metaData);
-			((DecompileWriteRule)WRITE_RULES.get("fmod")).setSource(binDir.resolve("/lib/fmod-jni.jar")).setDecompFolder(decomp).setName("fmod-jni").setMetaData(metaData);
+			((DecompileWriteRule)WRITE_RULES.get("wildermyth")).setDecompFolder(decomp).setMetaData(metaData);
+			((DecompileWriteRule)WRITE_RULES.get("scratchpad")).setDecompFolder(decomp).setMetaData(metaData);
+			((DecompileWriteRule)WRITE_RULES.get("server")).setDecompFolder(decomp).setMetaData(metaData);
+			((DecompileWriteRule)WRITE_RULES.get("gameEngine")).setDecompFolder(decomp).setMetaData(metaData);
+			((DecompileWriteRule)WRITE_RULES.get("fmod")).setDecompFolder(decomp).setMetaData(metaData);
 			//((DecompileWriteRule)WRITE_RULES.get("devvotes-client")).setSource(binDir.resolve("/lib/devvotes-client.jar"));
 		}
 	}

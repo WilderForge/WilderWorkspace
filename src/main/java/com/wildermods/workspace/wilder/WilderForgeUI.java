@@ -2,6 +2,7 @@ package com.wildermods.workspace.wilder;
 
 import java.awt.EventQueue;
 import java.io.File;
+import java.io.IOException;
 import java.nio.file.InvalidPathException;
 import java.util.ArrayList;
 import java.util.List;
@@ -395,11 +396,24 @@ public class WilderForgeUI implements UI<WilderInstallationProperties, Wildermyt
 						showForceCopy = true;
 					}
 					
-					if(newInstanceDir != null && newInstanceDir.exists() && newInstanceDir.listFiles() != null && newInstanceDir.listFiles().length > 0) {
-						if(!forceCopy.isSelected()) {
-							errors.add("* The destination directory is not empty. Check 'Force Copy' checkbox above to copy anyway.");
+					
+					if(newInstanceDir != null) {
+						File[] existingFiles = newInstanceDir.listFiles();
+						if (newInstanceDir.exists() && existingFiles != null && existingFiles.length > 0) {
+							if(!forceCopy.isSelected()) {
+								errors.add("* The destination directory is not empty. Check 'Force Copy' checkbox above to copy anyway.");
+								errors.add("\t(" +  newInstanceDir.listFiles().length + " files)");
+								for(int i = 0; i < existingFiles.length && i < 5; i++) {
+									try {
+										errors.add("\t\t" + existingFiles[i].getCanonicalPath());
+									} catch (IOException e) {
+										// TODO Auto-generated catch block
+										e.printStackTrace();
+									}
+								}
+							}
+							showForceCopy = true;
 						}
-						showForceCopy = true;
 					}
 					
 					if(showForceCopy) {

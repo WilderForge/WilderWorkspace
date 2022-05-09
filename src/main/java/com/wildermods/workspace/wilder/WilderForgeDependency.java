@@ -26,6 +26,14 @@ public enum WilderForgeDependency implements Dependency, Resource {
 		false
 	),
 	
+	JAVA("Java",
+		"@javaDecompVersion@",
+		"",
+		"",
+		false,
+		false
+	),
+	
 	FABRIC_LOADER("Fabric Loader", 
 		"@fabricLoaderVersion@", 
 		"https://maven.fabricmc.net/net/fabricmc/fabric-loader/@fabricLoaderVersion@/fabric-loader-@fabricLoaderVersion@.jar", 
@@ -162,7 +170,7 @@ public enum WilderForgeDependency implements Dependency, Resource {
 					System.out.println("There was either no gradle.properties in resources, or there was an error reading it. Looking for gradle.properties in devspace.");
 					File gradleProperties = new File("./gradle.properties");
 					if(gradleProperties.exists()) {
-						String versions = Files.readString(gradleProperties.toPath());
+						String versions = new String(Files.readAllBytes(gradleProperties.toPath()));
 						Matcher matcher = obtainVersionRegex.matcher(versions);
 						if(matcher.find()) {
 							version = matcher.group("version");

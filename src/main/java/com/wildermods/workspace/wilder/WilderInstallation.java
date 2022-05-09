@@ -123,7 +123,7 @@ public class WilderInstallation extends Installation<WilderInstallationPropertie
 			WRITE_RULES.put("server", new DecompileWriteRule(decompiler, ".*/Wildermyth/lib/server-.*\\.jar"));
 			WRITE_RULES.put("gameEngine", new DecompileWriteRule(decompiler, ".*/Wildermyth/lib/gameEngine-.*\\.jar"));
 			WRITE_RULES.put("fmod", new DecompileWriteRule(decompiler, ".*/Wildermyth/lib/fmod-jni\\.jar"));
-			//WRITE_RULES.put("devvotes-client", new DecompileWriteRule(".*/Wildermyth/lib/devvotes-client\\.jar")); //Crashes Enigma with StackOverflowError
+			WRITE_RULES.put("devvotes-client", new DecompileWriteRule(decompiler, ".*/Wildermyth/lib/devvotes-client\\.jar"));
 		}
 	}
 
@@ -173,7 +173,7 @@ public class WilderInstallation extends Installation<WilderInstallationPropertie
 			((DecompileWriteRule)WRITE_RULES.get("server")).setDecompFolder(decomp).setMetaData(metaData);
 			((DecompileWriteRule)WRITE_RULES.get("gameEngine")).setDecompFolder(decomp).setMetaData(metaData);
 			((DecompileWriteRule)WRITE_RULES.get("fmod")).setDecompFolder(decomp).setMetaData(metaData);
-			//((DecompileWriteRule)WRITE_RULES.get("devvotes-client")).setSource(binDir.resolve("/lib/devvotes-client.jar"));
+			((DecompileWriteRule)WRITE_RULES.get("devvotes-client")).setDecompFolder(decomp).setMetaData(metaData);
 		}
 	}
 

@@ -83,15 +83,15 @@ public class DecompileWriteRule<Decompiler extends LoomDecompiler> extends Write
 		return null;
 	}
 	
-	public void remap(Path linemap, Path jarToRemap, Path remappedJarDest) {
+	public void remap(Path linemap, Path jarToRemap, Path remappedJarDest) throws Throwable {
 		LineNumberRemapper remapper = new LineNumberRemapper();
 		remapper.readMappings(linemap.toFile());
-		try {
-			ThreadedSimpleProgressLogger logger = new ThreadedSimpleProgressLogger(new ConsumerLogger());
-			remapper.process(logger, jarToRemap, remappedJarDest);
-		}
-		catch(Throwable t) {
-			throw new Error(t);
+		ThreadedSimpleProgressLogger logger = new ThreadedSimpleProgressLogger(new ConsumerLogger());
+		
+		try(Delegate in = FileSystemUtil.getJarFileSystem(jarToRemap.toFile(), true);
+			Delegate out = FileSystemUtil.getJarFileSystem(remappedJarDest.toFile(), true);) 
+		{
+			remapper.process(logger, in.get().getPath("/"), out.get().getPath("/"));
 		}
 	}
 

@@ -9,6 +9,7 @@ import java.util.List;
 
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JTextField;
 import javax.swing.text.DefaultCaret;
 
@@ -66,6 +67,7 @@ public class WilderForgeUI implements UI<WilderInstallationProperties, Wildermyt
 	 * Launch the UI.
 	 */
 	public WilderForgeUI (String[] args) {
+		preCheck();
 		initialize();
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
@@ -77,6 +79,22 @@ public class WilderForgeUI implements UI<WilderInstallationProperties, Wildermyt
 				}
 			}
 		});
+	}
+	
+	public void preCheck() {
+	    String version = System.getProperty("java.version");
+	    if(version.startsWith("1.")) {
+	        version = version.substring(2, 3);
+	    } else {
+	        int dot = version.indexOf(".");
+	        if(dot != -1) { version = version.substring(0, dot); }
+	    } 
+	    int versionNo = Integer.parseInt(version);
+	    int requiredVersion = Integer.parseInt(WilderForgeDependency.JAVA.getVersion());
+	    if(versionNo < 17) {
+	    	JOptionPane.showMessageDialog(null, "WilderWorkspace can only run on Java " + requiredVersion+ " or later. You are currently running Java " + System.getProperty("java.version") + ". \n\nRe-run this jar in a Java " + requiredVersion + " environment.");
+	    	System.exit(-1);
+	    }
 	}
 
 	/**

@@ -1,7 +1,7 @@
 package com.wildermods.workspace;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.apache.commons.io.FileUtils;
 
@@ -20,11 +20,11 @@ public class ShouldOverwriteWriteRule extends WriteRule {
 	}
 
 	@Override
-	public Throwable write(Installation installation, File source, File dest) {
-		if(shouldOverwrite || !dest.exists()) {
+	public Throwable write(Installation installation, Path source, Path dest) {
+		if(shouldOverwrite || !dest.toFile().exists()) {
 			try {
 				System.out.println("Overwriting " + dest);
-				FileUtils.copyFile(source, dest);
+				FileUtils.copyFile(source.toFile(), dest.toFile());
 			} catch (IOException e) {
 				return e;
 			}

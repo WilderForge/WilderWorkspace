@@ -20,20 +20,22 @@ application {
 	mainClass = 'com.wildermods.workspace.Main'
 }
 
-sourceCompatibility = '16'
-targetCompatibility = '16'
+sourceCompatibility = '17'
+targetCompatibility = '17'
 
 dependencies { //For some reason, dependencies must be specified as shadow and implementation or dependencies will be missing at compile time, because fuck yoyu
-	shadow group: 'cuchaz', name: 'enigma', version: enigmaVersion
-	shadow group: 'cuchaz', name: 'enigma-cli', version: enigmaVersion
+	shadow group: 'net.fabricmc', name: 'fabric-loom', version: loomVersion
 	shadow group: 'commons-io', name: 'commons-io', version: commonsIOVersion
 	shadow group: 'org.apache.commons', name: 'commons-text', version: commonsTextVersion
 	shadow group: 'com.google.code.gson', name: 'gson', version: gsonVersion
-	implementation group: 'cuchaz', name: 'enigma', version: enigmaVersion
-	implementation group: 'cuchaz', name: 'enigma-cli', version: enigmaVersion
+	shadow group: 'org.slf4j', name: 'slf4j-api', version: slf4jVersion
+	shadow group: 'net.fabricmc', name: 'fabric-fernflower', version: fernFlowerVersion
+	implementation group: 'net.fabricmc', name: 'fabric-loom', version: loomVersion
 	implementation group: 'commons-io', name: 'commons-io', version: commonsIOVersion
 	implementation group: 'org.apache.commons', name: 'commons-text', version: commonsTextVersion
 	implementation group: 'com.google.code.gson', name: 'gson', version: gsonVersion
+	implementation group: 'org.slf4j', name: 'slf4j-api', version: slf4jVersion
+	implementation group: 'net.fabricmc', name: 'fabric-fernflower', version: fernFlowerVersion
 }
 
 import org.apache.tools.ant.filters.ReplaceTokens
@@ -51,7 +53,7 @@ task processSource(type: Sync) {
 	inputs.property 'mixinVersion', mixinVersion
 	inputs.property 'guavaVersion', guavaVersion
 	inputs.property 'gsonVersion', gsonVersion
-	inputs.property 'enigmaVersion', enigmaVersion
+	inputs.property 'loomVersion', loomVersion
 	inputs.property 'commonsTextVersion', commonsTextVersion
 	inputs.property 'commonsIOVersion', commonsIOVersion
 	
@@ -59,7 +61,7 @@ task processSource(type: Sync) {
 		wilderLoaderVersion: wilderLoaderVersion, gameProviderVersion: gameProviderVersion, 
 		tinyMappingsVersion: tinyMappingsVersion, tinyRemapperVersion: tinyRemapperVersion,
 		accessWidenerVersion: accessWidenerVersion, asmVersion: asmVersion, mixinVersion: mixinVersion,
-		guavaVersion: guavaVersion, gsonVersion: gsonVersion, enigmaVersion: enigmaVersion,
+		guavaVersion: guavaVersion, gsonVersion: gsonVersion, enigmaVersion: loomVersion,
 		commonsTextVersion: commonsTextVersion, commonsIOVersion: commonsIOVersion
 	])
 	into "$buildDir/src"

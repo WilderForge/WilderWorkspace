@@ -116,7 +116,15 @@ public abstract class Installation<I extends InstallationProperties<G>, G extend
 	 */
 	public void installImpl() throws InterruptedException {
 		File workspaceDir = installationProperties.getDestDir();
-		Iterator<File> files = FileUtils.iterateFilesAndDirs(installationProperties.getSourceDir(), TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
+		Iterator<File> files;
+		
+		if(installationProperties.getSourceDir() != null) {
+			files = FileUtils.iterateFilesAndDirs(installationProperties.getSourceDir(), TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
+		}
+		else {
+			files = Collections.emptyIterator();
+		}
+		
 		int found = 0;
 		int jars = 0;
 		int excluded = 0;
@@ -155,39 +163,40 @@ public abstract class Installation<I extends InstallationProperties<G>, G extend
 			File f = p.toFile();
 			boolean isModified = false;
 			try {
-
-				Path dest = installationProperties.getBinPath().resolve(getLocalPath(installationProperties.getSourcePath(), p));
-				
-				if(!f.isDirectory()) {
-					for(WriteRule writeRule : WRITE_RULES.values()) {
-						if(writeRule.matches(p)) {
-							isModified = true;
-							Throwable t = writeRule.write(this, p, dest);
-							if(t != null) {
-								errors.put(p, t);
-								continue fileLoop;
+				if(installationProperties.getBinDir() != null) {
+					Path dest = installationProperties.getBinPath().resolve(getLocalPath(installationProperties.getSourcePath(), p));
+					
+					if(!f.isDirectory()) {
+						for(WriteRule writeRule : WRITE_RULES.values()) {
+							if(writeRule.matches(p)) {
+								isModified = true;
+								Throwable t = writeRule.write(this, p, dest);
+								if(t != null) {
+									errors.put(p, t);
+									continue fileLoop;
+								}
 							}
 						}
-					}
-					if(isModified) {
-						copied++;
-						modified++;
-					}
-					else {
-						if(dest.toFile().exists() && installationProperties.overwriteGame()) {
-							System.out.println("Overwriting " + dest);
+						if(isModified) {
 							copied++;
-							FileUtils.copyFile(f, dest.toFile());
-						}
-						else if(dest.toFile().exists()){
-							System.out.println("Skipping " + dest + " by default because it already exists.");
+							modified++;
 						}
 						else {
-							//System.out.println("copying " + f);
-							copied++;
-							FileUtils.copyFile(f, dest.toFile());
+							if(dest.toFile().exists() && installationProperties.overwriteGame()) {
+								System.out.println("Overwriting " + dest);
+								copied++;
+								FileUtils.copyFile(f, dest.toFile());
+							}
+							else if(dest.toFile().exists()){
+								System.out.println("Skipping " + dest + " by default because it already exists.");
+							}
+							else {
+								//System.out.println("copying " + f);
+								copied++;
+								FileUtils.copyFile(f, dest.toFile());
+							}
+							
 						}
-						
 					}
 				}
 

@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -31,7 +32,7 @@ public abstract class Installation<I extends InstallationProperties<G>, G extend
 		this.installationProperties = properties;
 	}
 	
-	protected final void install() throws InterruptedException {
+	public final void install() throws InterruptedException {
 		preCheck();
 		if(installationProperties.isValid()) {
 			setupWriteRulesAndResources();
@@ -43,7 +44,7 @@ public abstract class Installation<I extends InstallationProperties<G>, G extend
 		}
 	}
 
-	public void preCheck() {
+	protected void preCheck() {
 	    String version = System.getProperty("java.version");
 	    if(version.startsWith("1.")) {
 	        version = version.substring(2, 3);

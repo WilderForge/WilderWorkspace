@@ -136,7 +136,7 @@ public class WilderInstallation extends Installation<WilderInstallationPropertie
 			NEW_RESOURCES.put("build.gradle", new LocalResource("build.gradle", false));
 			NEW_RESOURCES.put("gradlew", new LocalResource("gradlew", false));
 			NEW_RESOURCES.put("gradlew.bat", new LocalResource("gradlew.bat", false));
-			NEW_RESOURCES.put("gradleJar", new LocalResource("gradle/wrapper/gradle-wrapper", "gradle/wrapper/gradle-wrapper.jar", false));
+			NEW_RESOURCES.put("gradleJar", new LocalResource("gradle/wrapper/gradle-wrapper.jar", "gradle/wrapper/gradle-wrapper.jar", false));
 			NEW_RESOURCES.put("gradleProperties", new LocalResource("gradle/wrapper/gradle-wrapper.properties", false));
 		}
 		

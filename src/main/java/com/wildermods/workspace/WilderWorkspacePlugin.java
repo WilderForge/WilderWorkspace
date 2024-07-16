@@ -10,7 +10,7 @@ import com.wildermods.workspace.gradle.plugin.tasks.CopyLocalDependenciesToWorks
 
 import org.gradle.api.Plugin;
 
-public class WilderShapePlugin implements Plugin<Project> {
+public class WilderWorkspacePlugin implements Plugin<Project> {
     public void apply(Project project) {
         
         project.getTasks().register("copyLocalDependenciesToWorkspace", CopyLocalDependenciesToWorkspaceTask.class, task -> {

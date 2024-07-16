@@ -168,4 +168,8 @@ public class CopyLocalDependenciesToWorkspaceTask extends DefaultTask {
 		return decompDir;
 	}
 	
+	public boolean getOverwrite() {
+		return overwrite;
+	}
+	
 }

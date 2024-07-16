@@ -1,5 +1,5 @@
 plugins {
-    id 'java-gradle-plugin'
+	id 'java-gradle-plugin'
 	id 'eclipse'
 	id 'maven-publish'
 }
@@ -15,10 +15,6 @@ repositories {
 version = workspaceVersion
 group = "com.wildermods"
 archivesBaseName = "wilderworkspace"
-
-application {
-	mainClass = 'com.wildermods.workspace.Main'
-}
 
 sourceCompatibility = '17'
 targetCompatibility = '17'

@@ -45,8 +45,8 @@ compileJava {
 publishing {
 	publications {
 		maven(MavenPublication) {
-			groupID = "com.wildermods",
-			artifactId = "wilderworkspace",
+			groupId = "com.wildermods"
+			artifactId = "wilderworkspace"
 			version = workspaceVersion
 		}
 	}

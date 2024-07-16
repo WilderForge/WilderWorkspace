@@ -1,8 +1,8 @@
 plugins {
+    id 'java-gradle-plugin'
 	id 'application'
 	id 'java-library'
 	id 'eclipse'
-	id 'com.github.johnrengelman.shadow' version "8.1.1"
 	id 'maven-publish'
 }
 
@@ -24,13 +24,7 @@ application {
 sourceCompatibility = '17'
 targetCompatibility = '17'
 
-dependencies { //For some reason, dependencies must be specified as shadow and implementation or dependencies will be missing at compile time, because fuck yoyu
-	shadow group: 'net.fabricmc', name: 'fabric-loom', version: loomVersion
-	shadow group: 'commons-io', name: 'commons-io', version: commonsIOVersion
-	shadow group: 'org.apache.commons', name: 'commons-text', version: commonsTextVersion
-	shadow group: 'com.google.code.gson', name: 'gson', version: gsonVersion
-	shadow group: 'org.slf4j', name: 'slf4j-api', version: slf4jVersion
-	shadow group: 'net.fabricmc', name: 'fabric-fernflower', version: fernFlowerVersion
+dependencies {
 	implementation group: 'net.fabricmc', name: 'fabric-loom', version: loomVersion
 	implementation group: 'commons-io', name: 'commons-io', version: commonsIOVersion
 	implementation group: 'org.apache.commons', name: 'commons-text', version: commonsTextVersion
@@ -69,29 +63,6 @@ task processSource(type: Sync) {
 	
 }
 
-shadowJar {
-	mergeServiceFiles()
-	configurations = [project.configurations.shadow]
-	exclude 'META-INF/LICENSE'
-	exclude 'META-INF/LICENSE.txt'
-	exclude 'META-INF/LICENSsE.txt'
-	exclude 'META-INF/NOTICE'
-	exclude 'META-INF/NOTICE.txt'
-	exclude 'META-INF/DEPENDENCIES'
-	exclude 'LICENSE.txt'
-}
-
 compileJava {
 	source = processSource.outputs
-}
-
-publishing {
-  publications {
-    shadow(MavenPublication) { publication ->
-      project.shadow.component(publication)
-    }
-  }
-  repositories {
-    mavenLocal()
-  }
 }

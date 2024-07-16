@@ -1,7 +1,6 @@
 package com.wildermods.workspace;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
@@ -11,12 +10,23 @@ import java.nio.file.StandardOpenOption;
 import java.util.Properties;
 
 import org.apache.commons.io.file.PathUtils;
+import org.gradle.api.Project;
+
+import com.wildermods.workspace.util.Platform;
 
 public class WilderWorkspaceExtension {
-	private String platform;
+	private final Project project;
+	private String platform = Platform.steam.name();
 	private String patchline;
 	private String gameDestDir;
 	private String decompDir;
+	
+	public WilderWorkspaceExtension(Project project) {
+		this.project = project;
+		this.patchline = project.getName() + " " + project.getVersion();
+		this.gameDestDir = project.relativePath("bin/wildermyth/");
+		this.decompDir = Path.of(gameDestDir).resolve("decomp").toString();
+	}
 	
 	public String getPlatform() {
 		return platform;

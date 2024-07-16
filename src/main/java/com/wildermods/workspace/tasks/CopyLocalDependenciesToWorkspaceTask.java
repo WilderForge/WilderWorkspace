@@ -2,6 +2,7 @@ package com.wildermods.workspace.tasks;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+
 import java.nio.charset.Charset;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -11,15 +12,14 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.concurrent.Callable;
 
 import org.apache.commons.io.file.PathUtils;
+
 import org.gradle.api.DefaultTask;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
-import org.gradle.internal.impldep.org.apache.commons.lang.NotImplementedException;
 
 import com.wildermods.workspace.util.OS;
 import com.wildermods.workspace.util.Platform;

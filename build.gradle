@@ -22,7 +22,7 @@ targetCompatibility = '17'
 dependencies {
 	implementation group: 'commons-io', name: 'commons-io', version: commonsIOVersion
 	implementation group: 'org.apache.commons', name: 'commons-text', version: commonsTextVersion
-	implementation group: 'net.fabricmc', name: 'fabric-fernflower', version: fernFlowerVersion
+	implementation group: 'org.vineflower', name: 'vineflower', version: vineFlowerVersion
 }
 
 import org.apache.tools.ant.filters.ReplaceTokens

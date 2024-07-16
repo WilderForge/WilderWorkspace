@@ -1,6 +1,10 @@
 package com.wildermods.workspace.decompile;
 
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Objects;
 
 import com.wildermods.workspace.ConsumerLogger;
 import com.wildermods.workspace.Installation;
@@ -8,6 +12,7 @@ import com.wildermods.workspace.WriteRule;
 
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
 import net.fabricmc.loom.api.decompilers.LoomDecompiler;
+import net.fabricmc.loom.decompilers.ClassLineNumbers;
 import net.fabricmc.loom.decompilers.LineNumberRemapper;
 import net.fabricmc.loom.util.FileSystemUtil;
 import net.fabricmc.loom.util.FileSystemUtil.Delegate;
@@ -65,15 +70,17 @@ public class DecompileWriteRule<Decompiler extends LoomDecompiler> extends Write
 	}
 	
 	public void remap(Path linemap, Path jarToRemap, Path remappedJarDest) throws Throwable {
-		LineNumberRemapper remapper = new LineNumberRemapper();
-		remapper.readMappings(linemap.toFile());
-		ThreadedSimpleProgressLogger logger = new ThreadedSimpleProgressLogger(new ConsumerLogger());
-		
-		try(Delegate in = FileSystemUtil.getJarFileSystem(jarToRemap.toFile(), true);
-			Delegate out = FileSystemUtil.getJarFileSystem(remappedJarDest.toFile(), true);) 
-		{
-			remapper.process(logger, in.get().getPath("/"), out.get().getPath("/"));
+		ClassLineNumbers lineNumbers = ClassLineNumbers.readMappings(linemap);
+		LineNumberRemapper remapper = new LineNumberRemapper(lineNumbers);
+		remapper.process(jarToRemap, remappedJarDest);
+
+		final Path lineMap = jarToRemap.resolveSibling(jarToRemap.getFileName() + ".linemap.txt");
+
+		try (BufferedWriter writer = Files.newBufferedWriter(lineMap)) {
+			lineNumbers.write(writer);
 		}
+
+		System.out.println("Wrote linemap to " + lineMap);
 	}
 
 }

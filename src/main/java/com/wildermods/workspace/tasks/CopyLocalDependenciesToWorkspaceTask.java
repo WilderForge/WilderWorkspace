@@ -2,9 +2,15 @@ package com.wildermods.workspace.tasks;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.concurrent.Callable;
 
 import org.apache.commons.io.file.PathUtils;
@@ -32,6 +38,9 @@ public class CopyLocalDependenciesToWorkspaceTask extends DefaultTask {
 	
 	@Input
 	private String decompDir = Path.of(destDir).resolve("decomp").toString();
+	
+	@Input
+	private boolean overwrite = false;
 	
 	public static enum Platform {
 		
@@ -88,8 +97,34 @@ public class CopyLocalDependenciesToWorkspaceTask extends DefaultTask {
 				throw new NotDirectoryException(installDir.toAbsolutePath().normalize().toString());
 			}
 			
-			PathUtils.copyDirectory(installDir.resolve("assets"), destDir.resolve("assets"));
+			if(!Files.exists(destDir)) {
+				Files.createDirectories(destDir);
+			}
 			
+			Files.walkFileTree(installDir, new SimpleFileVisitor<Path>() {
+				@Override
+				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+					Path target = destDir.resolve(installDir.relativize(file));
+					if(!overwrite && Files.exists(target)) {
+						return FileVisitResult.CONTINUE;
+					}
+					Files.copy(file, target, StandardCopyOption.REPLACE_EXISTING);
+					return FileVisitResult.CONTINUE;
+				}
+				
+				@Override
+				public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
+					Path target = destDir.resolve(installDir.relativize(dir));
+					if(attrs.isSymbolicLink() || dir.getFileName().endsWith("backup") || dir.getFileName().endsWith("feedback") || dir.getFileName().endsWith("logs") || dir.getFileName().endsWith("out") || dir.getFileName().endsWith("players") || dir.getFileName().endsWith("screenshots")) {
+						return FileVisitResult.SKIP_SUBTREE;
+					}
+					Files.createDirectories(target);
+					return FileVisitResult.CONTINUE;
+				}
+			});
+			
+			Path patchFile = destDir.resolve("patchline.txt");
+			PathUtils.writeString(patchFile, patchline + " - [WilderWorkspace {$workspaceVersion}]", Charset.defaultCharset(), StandardOpenOption.TRUNCATE_EXISTING);
 			
 		}
 		catch(Exception e) {
@@ -98,11 +133,21 @@ public class CopyLocalDependenciesToWorkspaceTask extends DefaultTask {
 		}
 	}
 	
-	private static void copyDirs(Path source, Path dest, String... sub) {
+	private static void copyDirs(Path source, Path dest, String... sub) throws IOException {
 		for(String s : sub) {
 			Path from = source.resolve(s);
+			Path to = dest;
 			if(Files.exists(from)) {
-				
+				if(Files.isDirectory(from)) {
+					to = dest.resolve(s);
+					PathUtils.copyDirectory(from, to);
+				}
+				else if(Files.isRegularFile(from)) {
+					PathUtils.copyFileToDirectory(from, to);
+				}
+			}
+			else {
+				throw new FileNotFoundException(from.toAbsolutePath().normalize().toString());
 			}
 		}
 	}
@@ -121,6 +166,10 @@ public class CopyLocalDependenciesToWorkspaceTask extends DefaultTask {
 	
 	public String getDecompDir() {
 		return decompDir;
+	}
+	
+	public boolean getOverwrite() {
+		return overwrite;
 	}
 	
 }

@@ -6,7 +6,7 @@ package com.wildermods.workspace;
 import org.gradle.api.Project;
 import org.gradle.api.tasks.compile.JavaCompile;
 
-import com.wildermods.workspace.gradle.plugin.tasks.CopyLocalDependenciesToWorkspaceTask;
+import com.wildermods.workspace.tasks.CopyLocalDependenciesToWorkspaceTask;
 
 import org.gradle.api.Plugin;
 

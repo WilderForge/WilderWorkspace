@@ -1,7 +1,5 @@
 plugins {
     id 'java-gradle-plugin'
-	id 'application'
-	id 'java-library'
 	id 'eclipse'
 	id 'maven-publish'
 }
@@ -11,6 +9,7 @@ repositories {
         url "https://maven.fabricmc.net"
     }
 	mavenCentral()
+	mavenLocal()
 }
 
 version = workspaceVersion
@@ -25,11 +24,8 @@ sourceCompatibility = '17'
 targetCompatibility = '17'
 
 dependencies {
-	implementation group: 'net.fabricmc', name: 'fabric-loom', version: loomVersion
 	implementation group: 'commons-io', name: 'commons-io', version: commonsIOVersion
 	implementation group: 'org.apache.commons', name: 'commons-text', version: commonsTextVersion
-	implementation group: 'com.google.code.gson', name: 'gson', version: gsonVersion
-	implementation group: 'org.slf4j', name: 'slf4j-api', version: slf4jVersion
 	implementation group: 'net.fabricmc', name: 'fabric-fernflower', version: fernFlowerVersion
 }
 
@@ -38,26 +34,9 @@ import org.apache.tools.ant.filters.ReplaceTokens
 task processSource(type: Sync) {
 	from sourceSets.main.java
 	inputs.property 'workspaceVersion', workspaceVersion
-	inputs.property 'fabricLoaderVersion', fabricLoaderVersion
-	inputs.property 'wilderLoaderVersion', wilderLoaderVersion
-	inputs.property 'gameProviderVersion', gameProviderVersion
-	inputs.property 'tinyMappingsVersion', tinyMappingsVersion
-	inputs.property 'tinyRemapperVersion', tinyRemapperVersion
-	inputs.property 'accessWidenerVersion', accessWidenerVersion
-	inputs.property 'asmVersion', asmVersion
-	inputs.property 'mixinVersion', mixinVersion
-	inputs.property 'guavaVersion', guavaVersion
-	inputs.property 'gsonVersion', gsonVersion
-	inputs.property 'loomVersion', loomVersion
-	inputs.property 'commonsTextVersion', commonsTextVersion
-	inputs.property 'commonsIOVersion', commonsIOVersion
 	
-	filter(ReplaceTokens, tokens: [workspaceVersion: workspaceVersion, fabricLoaderVersion: fabricLoaderVersion,
-		wilderLoaderVersion: wilderLoaderVersion, gameProviderVersion: gameProviderVersion, 
-		tinyMappingsVersion: tinyMappingsVersion, tinyRemapperVersion: tinyRemapperVersion,
-		accessWidenerVersion: accessWidenerVersion, asmVersion: asmVersion, mixinVersion: mixinVersion,
-		guavaVersion: guavaVersion, gsonVersion: gsonVersion, enigmaVersion: loomVersion,
-		commonsTextVersion: commonsTextVersion, commonsIOVersion: commonsIOVersion
+	filter(ReplaceTokens, tokens: [
+		workspaceVersion: workspaceVersion
 	])
 	into "$buildDir/src"
 	
@@ -65,4 +44,14 @@ task processSource(type: Sync) {
 
 compileJava {
 	source = processSource.outputs
+}
+
+publishing {
+	publications {
+		maven(MavenPublication) {
+			groupID = "com.wildermods",
+			artifactId = "wilderworkspace",
+			version = workspaceVersion
+		}
+	}
 }

@@ -22,6 +22,7 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.internal.impldep.org.apache.commons.lang.NotImplementedException;
 
 import com.wildermods.workspace.util.OS;
+import com.wildermods.workspace.util.Platform;
 
 public class CopyLocalDependenciesToWorkspaceTask extends DefaultTask {
 	
@@ -34,45 +35,13 @@ public class CopyLocalDependenciesToWorkspaceTask extends DefaultTask {
 	private String patchline = getProject().getName() + " " + getProject().getVersion();
 	
 	@Input
-	private String destDir = getProject().relativePath("bin");
+	private String destDir = getProject().relativePath("bin/wildermyth");
 	
 	@Input
 	private String decompDir = Path.of(destDir).resolve("decomp").toString();
 	
 	@Input
 	private boolean overwrite = false;
-	
-	public static enum Platform {
-		
-		steam(() -> {return OS.getSteamDefaultDirectory().resolve("common").resolve("Wildermyth");}),
-		epic(unknownPlatformLocation("epic")),
-		itch(unknownPlatformLocation("itch")),
-		gog(unknownPlatformLocation("gog")),
-		filesystem(() -> {return null;});
-		
-		private Callable<Path> dir;
-		
-		private Platform (Callable<Path> dir) {
-			this.dir = dir;
-		}
-		
-		private Path getDefaultInstallDirectory() throws Exception {
-			return dir.call();
-		}
-		
-		public static Platform fromString(String input) {
-			for(Platform platform : Platform.values()) {
-				if(platform.name().equals(input.toLowerCase())) {
-					return platform;
-				}
-			}
-			return filesystem;
-		}
-	}
-	
-	public static Callable<Path> unknownPlatformLocation(String platform) {
-		return (() -> {throw new NotImplementedException("I don't know where the default install directory for Wildermyth is for the " + platform + " platform. Submit a pull request or input a raw path to the installation location.");});
-	}
 	
 	@TaskAction
 	public void copyDependencies() throws IOException {
@@ -156,20 +125,40 @@ public class CopyLocalDependenciesToWorkspaceTask extends DefaultTask {
 		return platform;
 	}
 	
+	public void setPlatform(String platform) {
+		this.platform = platform;
+	}
+	
 	public String getPatchline() {
 		return patchline;
+	}
+	
+	public void setPatchline(String patchline) {
+		this.patchline = patchline;
 	}
 	
 	public String getDestDir() {
 		return destDir;
 	}
 	
+	public void setDestDir(String path) {
+		this.destDir = path;
+	}
+	
 	public String getDecompDir() {
 		return decompDir;
 	}
 	
+	public void setDecompDir(String path) {
+		this.decompDir = path;
+	}
+	
 	public boolean getOverwrite() {
 		return overwrite;
+	}
+	
+	public void setOverwrite(boolean overwrite) {
+		this.overwrite = overwrite;
 	}
 	
 }

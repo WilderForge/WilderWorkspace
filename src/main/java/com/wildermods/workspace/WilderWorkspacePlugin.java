@@ -4,8 +4,10 @@
 package com.wildermods.workspace;
 
 import org.gradle.api.Project;
-import org.gradle.api.tasks.compile.JavaCompile;
+import org.gradle.plugins.ide.eclipse.EclipsePlugin;
+import org.gradle.plugins.ide.idea.IdeaPlugin;
 
+import com.wildermods.workspace.tasks.ClearLocalDependenciesTask;
 import com.wildermods.workspace.tasks.CopyLocalDependenciesToWorkspaceTask;
 
 import org.gradle.api.Plugin;
@@ -13,16 +15,47 @@ import org.gradle.api.Plugin;
 public class WilderWorkspacePlugin implements Plugin<Project> {
     public void apply(Project project) {
         
+    	WilderWorkspaceExtension extension = project.getExtensions().create("wilderWorkspace", WilderWorkspaceExtension.class);
+    	
         project.getTasks().register("copyLocalDependenciesToWorkspace", CopyLocalDependenciesToWorkspaceTask.class, task -> {
-        	
+        	task.setPlatform(extension.getPlatform());
+        	task.setPatchline(extension.getPatchline());
+        	task.setDecompDir(extension.getDecompDir());
+        	task.setDestDir(extension.getGameDestDir());
         });
         
-        project.getTasks().named("compileJava", JavaCompile.class, compileJava -> {
-        	compileJava.dependsOn(project.getTasks().named("copyLocalDependenciesToWorkspace"));
+        project.getTasks().register("clearLocalDependencies", ClearLocalDependenciesTask.class, task -> {
+        	task.setDecompDir(extension.getDecompDir());
+        	task.setDestDir(extension.getGameDestDir());
         });
         
-        project.getTasks().withType(JavaCompile.class).configureEach(javaCompile -> {
-            javaCompile.dependsOn(project.getTasks().named("copyLocalDependenciesToWorkspace"));
+        project.getTasks().register("setupDecompWorkspace", CopyLocalDependenciesToWorkspaceTask.class, task -> {
+        	task.setPlatform(extension.getPlatform());
+        	task.setPatchline(extension.getPatchline());
+        	task.setDecompDir(extension.getDecompDir());
+        	task.setDestDir(extension.getGameDestDir());
+        	task.setOverwrite(false);
+        	project.getPlugins().withType(EclipsePlugin.class, eclipsePlugin -> {
+        		task.dependsOn(project.getTasks().named("eclipse"));
+        	});
+        	project.getPlugins().withType(IdeaPlugin.class, ideaPlugin -> {
+        		task.dependsOn(project.getTasks().named("idea"));
+        	});
         });
+        
+        project.getTasks().register("updateDecompWorkspace", CopyLocalDependenciesToWorkspaceTask.class, task -> {
+        	task.setPlatform(extension.getPlatform());
+        	task.setPatchline(extension.getPatchline());
+        	task.setDecompDir(extension.getDecompDir());
+        	task.setDestDir(extension.getGameDestDir());
+        	task.setOverwrite(true);
+        	task.dependsOn(project.getTasks().named("clearLocalDependencies"));
+        	task.finalizedBy(project.provider(() -> {
+        		CopyLocalDependenciesToWorkspaceTask copyTask = (CopyLocalDependenciesToWorkspaceTask) project.getTasks().named("copyLocalDependenciesToWorkspace").get();
+        		copyTask.setOverwrite(true);
+        		return copyTask;
+        	}));
+        });
+        
     }
 }

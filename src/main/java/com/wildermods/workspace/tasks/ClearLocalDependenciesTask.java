@@ -16,7 +16,7 @@ import com.wildermods.workspace.util.FileHelper.IgnoreSymbolicVisitor;
 public class ClearLocalDependenciesTask extends DefaultTask {
 
 	@Input
-	private String destDir = getProject().relativePath("bin/wildermyth");
+	private String destDir = getProject().file("bin").toString();
 	
 	@Input
 	private String decompDir = Path.of(destDir).resolve("decomp").toString();
@@ -31,24 +31,26 @@ public class ClearLocalDependenciesTask extends DefaultTask {
 	}
 	
 	private void delete(Path path) throws IOException {
-		Files.walkFileTree(path, new IgnoreSymbolicVisitor<Path>() {
-			@Override
-			public FileVisitResult preVisitDirectory(Path path, BasicFileAttributes attrs) {
-				try {
-					FileVisitResult supResult = super.preVisitDirectory(path, attrs);
-					switch(supResult) {
-						case CONTINUE:
-							PathUtils.delete(path);
-							return FileVisitResult.SKIP_SUBTREE; //no more subtree if it's been deleted
-						default:
-							return supResult;
+		if(Files.exists(path)) {
+			Files.walkFileTree(path, new IgnoreSymbolicVisitor<Path>() {
+				@Override
+				public FileVisitResult preVisitDirectory(Path path, BasicFileAttributes attrs) {
+					try {
+						FileVisitResult supResult = super.preVisitDirectory(path, attrs);
+						switch(supResult) {
+							case CONTINUE:
+								PathUtils.delete(path);
+								return FileVisitResult.SKIP_SUBTREE; //no more subtree if it's been deleted
+							default:
+								return supResult;
+						}
+					}
+					catch(IOException e) {
+						throw new RuntimeException(e);
 					}
 				}
-				catch(IOException e) {
-					throw new RuntimeException(e);
-				}
-			}
-		});
+			});
+		}
 	}
 	
 	public String getDestDir() {

@@ -9,13 +9,14 @@ import org.gradle.plugins.ide.idea.IdeaPlugin;
 
 import com.wildermods.workspace.tasks.ClearLocalDependenciesTask;
 import com.wildermods.workspace.tasks.CopyLocalDependenciesToWorkspaceTask;
+import com.wildermods.workspace.tasks.DecompileJarsTask;
 
 import org.gradle.api.Plugin;
 
 public class WilderWorkspacePlugin implements Plugin<Project> {
     public void apply(Project project) {
-        
     	WilderWorkspaceExtension extension = project.getExtensions().create("wilderWorkspace", WilderWorkspaceExtension.class);
+    	extension.loadUserConfig();
     	
         project.getTasks().register("copyLocalDependenciesToWorkspace", CopyLocalDependenciesToWorkspaceTask.class, task -> {
         	task.setPlatform(extension.getPlatform());

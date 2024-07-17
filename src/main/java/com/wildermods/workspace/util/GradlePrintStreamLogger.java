@@ -19,7 +19,7 @@ public class GradlePrintStreamLogger extends IFernflowerLogger {
 				task.getLogger().error(message);
 				break;
 			case INFO:
-				task.getLogger().lifecycle(message);
+				task.getLogger().info(message);
 				break;
 			case TRACE:
 				task.getLogger().trace(message);
@@ -39,7 +39,7 @@ public class GradlePrintStreamLogger extends IFernflowerLogger {
 			task.getLogger().log(LogLevel.ERROR, message, t);
 			break;
 		case INFO:
-			task.getLogger().log(LogLevel.LIFECYCLE, message, t);
+			task.getLogger().log(LogLevel.INFO, message, t);
 			break;
 		case TRACE:
 			task.getLogger().log(LogLevel.DEBUG, message, t);

@@ -21,6 +21,7 @@ targetCompatibility = '17'
 
 dependencies {
 	implementation group: 'commons-io', name: 'commons-io', version: commonsIOVersion
+	implementation group: 'org.apache.commons', name: 'commons-lang3', version: commonsLangVersion
 	implementation group: 'org.apache.commons', name: 'commons-text', version: commonsTextVersion
 	implementation group: 'org.vineflower', name: 'vineflower', version: vineFlowerVersion
 }

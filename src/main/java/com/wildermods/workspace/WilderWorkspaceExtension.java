@@ -24,7 +24,7 @@ public class WilderWorkspaceExtension {
 	public WilderWorkspaceExtension(Project project) {
 		this.project = project;
 		this.patchline = project.getName() + " " + project.getVersion();
-		this.gameDestDir = project.relativePath("bin/wildermyth/");
+		this.gameDestDir = project.file("bin").toString();
 		this.decompDir = Path.of(gameDestDir).resolve("decomp").toString();
 	}
 	
@@ -32,7 +32,8 @@ public class WilderWorkspaceExtension {
 		return platform;
 	}
 	
-	public void setPlatform(String platform) {
+	public void setPlatformm(String platform) {
+		project.getLogger().info("Setting platform to " + platform);
 		this.platform = platform;
 	}
 	
@@ -62,6 +63,7 @@ public class WilderWorkspaceExtension {
 	
 	public void loadUserConfig() {
 		Path configPath = Paths.get(System.getProperty("user.home"), ".wilderWorkspace", "config.properties");
+		project.getLogger().lifecycle("Looking for configuration file at: " + configPath);
 		try {
 			if(!Files.exists(configPath)) {
 				PathUtils.createParentDirectories(configPath);
@@ -71,7 +73,7 @@ public class WilderWorkspaceExtension {
 			try(FileInputStream i = new FileInputStream(configPath.toFile())) {
 				props.load(i);
 				if(props.containsKey("platform")) {
-					setPlatform(props.getProperty(platform));
+					setPlatformm(props.getProperty("platform"));
 				}
 			}
 		} catch (IOException e) {

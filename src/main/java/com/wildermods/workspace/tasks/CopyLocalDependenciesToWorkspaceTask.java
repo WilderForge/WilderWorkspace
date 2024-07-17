@@ -21,6 +21,7 @@ import org.gradle.api.logging.Logging;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
 
+import com.wildermods.workspace.WilderWorkspaceExtension;
 import com.wildermods.workspace.util.OS;
 import com.wildermods.workspace.util.Platform;
 
@@ -35,7 +36,7 @@ public class CopyLocalDependenciesToWorkspaceTask extends DefaultTask {
 	private String patchline = getProject().getName() + " " + getProject().getVersion();
 	
 	@Input
-	private String destDir = getProject().relativePath("bin/wildermyth");
+	private String destDir = getProject().file("bin").toString();
 	
 	@Input
 	private String decompDir = Path.of(destDir).resolve("decomp").toString();
@@ -47,6 +48,7 @@ public class CopyLocalDependenciesToWorkspaceTask extends DefaultTask {
 	public void copyDependencies() throws IOException {
 		final Path destDir = Path.of(this.destDir).toAbsolutePath().normalize();
 		try {
+			LOGGER.info(getProject().getExtensions().findByType(WilderWorkspaceExtension.class).getPlatform());
 			Platform selectedPlatform = Platform.fromString(platform);
 			LOGGER.info("Platform: " + platform);
 			Path installDir;
@@ -99,6 +101,7 @@ public class CopyLocalDependenciesToWorkspaceTask extends DefaultTask {
 		catch(Exception e) {
 			RuntimeException e2 = new RuntimeException("Failed to copy dependencies.", e);
 			LOGGER.error("Failed to copy dependencies.", e2);
+			throw e2;
 		}
 	}
 	

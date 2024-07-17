@@ -3,13 +3,13 @@ package com.wildermods.workspace.util;
 import java.nio.file.Path;
 import java.util.concurrent.Callable;
 
-import org.gradle.internal.impldep.org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang3.NotImplementedException;
 
 import com.wildermods.workspace.util.Platform;
 
 public enum Platform {
 		
-		steam(() -> {return OS.getSteamDefaultDirectory().resolve("common").resolve("Wildermyth");}),
+		steam(() -> {return resolveSteamWildermyth(OS.getSteamDefaultDirectory());}),
 		epic(unknownPlatformLocation("epic")),
 		itch(unknownPlatformLocation("itch")),
 		gog(unknownPlatformLocation("gog")),
@@ -36,6 +36,10 @@ public enum Platform {
 		
 		public static Callable<Path> unknownPlatformLocation(String platform) {
 			return (() -> {throw new NotImplementedException("I don't know where the default install directory for Wildermyth is for the " + platform + " platform. Submit a pull request or input a raw path to the installation location.");});
+		}
+		
+		public static Path resolveSteamWildermyth(Path dir) {
+			return dir.resolve("Steam").resolve("steamapps").resolve("common").resolve("Wildermyth");
 		}
 		
 }

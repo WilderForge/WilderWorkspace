@@ -39,9 +39,6 @@ public class CopyLocalDependenciesToWorkspaceTask extends DefaultTask {
 	private String destDir = getProject().file("bin").toString();
 	
 	@Input
-	private String decompDir = Path.of(destDir).resolve("decomp").toString();
-	
-	@Input
 	private boolean overwrite = false;
 	
 	@TaskAction
@@ -146,14 +143,6 @@ public class CopyLocalDependenciesToWorkspaceTask extends DefaultTask {
 	
 	public void setDestDir(String path) {
 		this.destDir = path;
-	}
-	
-	public String getDecompDir() {
-		return decompDir;
-	}
-	
-	public void setDecompDir(String path) {
-		this.decompDir = path;
 	}
 	
 	public boolean getOverwrite() {

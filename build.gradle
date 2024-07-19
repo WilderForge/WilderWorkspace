@@ -1,15 +1,15 @@
 plugins {
-	id 'java-gradle-plugin'
-	id 'eclipse'
-	id 'maven-publish'
+    id 'java-gradle-plugin'
+    id 'eclipse'
+    id 'maven-publish'
 }
 
 repositories {
     maven {
         url "https://maven.fabricmc.net"
     }
-	mavenCentral()
-	mavenLocal()
+    mavenCentral()
+    mavenLocal()
 }
 
 version = workspaceVersion
@@ -20,35 +20,58 @@ sourceCompatibility = '17'
 targetCompatibility = '17'
 
 dependencies {
-	implementation group: 'commons-io', name: 'commons-io', version: commonsIOVersion
-	implementation group: 'org.apache.commons', name: 'commons-lang3', version: commonsLangVersion
-	implementation group: 'org.apache.commons', name: 'commons-text', version: commonsTextVersion
-	implementation group: 'org.vineflower', name: 'vineflower', version: vineFlowerVersion
+	gradleApi()
+    implementation group: 'org.apache.commons', name: 'commons-lang3', version: commonsLangVersion
+    implementation group: 'org.apache.commons', name: 'commons-text', version: commonsTextVersion
+    implementation group: 'commons-io', name: 'commons-io', version: commonsIOVersion
+    implementation group: 'org.vineflower', name: 'vineflower', version: vineFlowerVersion
 }
 
 import org.apache.tools.ant.filters.ReplaceTokens
 
 task processSource(type: Sync) {
-	from sourceSets.main.java
-	inputs.property 'workspaceVersion', workspaceVersion
-	
-	filter(ReplaceTokens, tokens: [
-		workspaceVersion: workspaceVersion
-	])
-	into "$buildDir/src"
-	
+    from sourceSets.main.java.srcDirs
+    into "$buildDir/processedSrc"
+    
+    inputs.property 'workspaceVersion', workspaceVersion
+    inputs.property 'commonsLangVersion', commonsLangVersion
+    inputs.property 'commonsIOVersion', commonsIOVersion
+    inputs.property 'commonsTextVersion', commonsTextVersion
+    inputs.property 'vineFlowerVersion', vineFlowerVersion
+    
+    filter(ReplaceTokens, tokens: [
+        workspaceVersion: workspaceVersion, 
+        commonsLangVersion: commonsLangVersion,
+        commonsTextVersion: commonsTextVersion,
+        commonsIOVersion: commonsIOVersion,
+        vineFlowerVersion: vineFlowerVersion
+    ])
 }
 
 compileJava {
-	source = processSource.outputs
+    source = fileTree(dir: "$buildDir/processedSrc", include: '**/*.java')
+    dependsOn processSource
 }
 
+sourceSets {
+    main {
+        java {
+            srcDirs = ["$buildDir/processedSrc"]
+        }
+    }
+}
+
+def pom2;
+
 publishing {
-	publications {
-		maven(MavenPublication) {
-			groupId = "com.wildermods"
-			artifactId = "wilderworkspace"
-			version = workspaceVersion
-		}
+    publications {
+        maven(MavenPublication) {
+            from components.java
+            groupId = "com.wildermods"
+            artifactId = "wilderworkspace"
+            version = workspaceVersion
+            pom2 = pom;
+
+        }
 	}
 }

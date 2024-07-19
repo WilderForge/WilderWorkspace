@@ -28,7 +28,7 @@ public class DecompileJarsTask extends DefaultTask {
 	
 	@TaskAction
 	public void decompile() throws IOException {
-		ConsoleDecompiler consoleDecompiler = new ConsoleDecompiler(Path.of(decompDir).normalize().toAbsolutePath().toFile(), Map.of(IFernflowerPreferences.INCLUDE_JAVA_RUNTIME, JrtFinder.CURRENT), new GradlePrintStreamLogger(this), SaveType.FILE) {}; //constructor is protected, have to subclass...
+		ConsoleDecompiler consoleDecompiler = new ConsoleDecompiler(Path.of(decompDir).normalize().toAbsolutePath().toFile(), Map.of(IFernflowerPreferences.INCLUDE_JAVA_RUNTIME, JrtFinder.CURRENT), new GradlePrintStreamLogger(this), SaveType.FOLDER) {}; //constructor is protected, have to subclass...
 		Path compiledDir = Path.of(this.compiledDir);
 		
 		/*

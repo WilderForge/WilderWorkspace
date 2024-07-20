@@ -9,7 +9,6 @@ import org.jetbrains.java.decompiler.main.extern.IResultSaver;
 
 import com.wildermods.workspace.util.GradlePrintStreamLogger;
 
-import net.fabricmc.loom.decompilers.vineflower.ThreadSafeResultSaver;
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
 
 public class WilderWorkspaceDecompiler {
@@ -36,7 +35,10 @@ public class WilderWorkspaceDecompiler {
 		
 		options.putAll(metaData.options());
 
-		IResultSaver saver = new ThreadSafeResultSaver(builder.getDecompDest()::toFile, builder.getLinemapDest()::toFile);
+		IResultSaver saver = new WWThreadSafeResultSaver(
+				() -> builder.getDecompDest(), 
+				() -> builder.getLinemapDest()
+			);
 		ff = new Fernflower(saver, options, (GradlePrintStreamLogger)metaData.logger());
 		
 		for(Path library : metaData.libraries()) {
@@ -48,7 +50,7 @@ public class WilderWorkspaceDecompiler {
 		}
 		
 	}
-	
+
 	public void decompile() {
 		try {
 			ff.decompileContext();

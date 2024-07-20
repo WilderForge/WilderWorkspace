@@ -1,10 +1,14 @@
 package com.wildermods.workspace.util;
 
+import java.io.IOException;
+
 import org.gradle.api.Task;
 import org.gradle.api.logging.LogLevel;
 import org.jetbrains.java.decompiler.main.extern.IFernflowerLogger;
 
-public class GradlePrintStreamLogger extends IFernflowerLogger {
+import net.fabricmc.loom.util.IOStringConsumer;
+
+public class GradlePrintStreamLogger extends IFernflowerLogger implements IOStringConsumer {
 
 	private final Task task;
 	
@@ -51,6 +55,11 @@ public class GradlePrintStreamLogger extends IFernflowerLogger {
 			break;
 		
 		}
+	}
+
+	@Override
+	public void accept(String data) throws IOException {
+		writeMessage(data, Severity.INFO);
 	}
 
 }

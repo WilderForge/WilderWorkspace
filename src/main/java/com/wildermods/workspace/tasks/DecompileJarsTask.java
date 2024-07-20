@@ -6,17 +6,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Map;
-
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
-import org.jetbrains.java.decompiler.main.decompiler.ConsoleDecompiler;
-import org.jetbrains.java.decompiler.main.decompiler.ConsoleDecompiler.SaveType;
-import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences;
-import org.jetbrains.java.decompiler.util.JrtFinder;
 
-import com.wildermods.workspace.util.GradlePrintStreamLogger;
+import com.wildermods.workspace.decomp.DecompilerBuilder;
+import com.wildermods.workspace.decomp.WilderWorkspaceDecompiler;
 
 public class DecompileJarsTask extends DefaultTask {
 
@@ -28,8 +23,10 @@ public class DecompileJarsTask extends DefaultTask {
 	
 	@TaskAction
 	public void decompile() throws IOException {
-		ConsoleDecompiler consoleDecompiler = new ConsoleDecompiler(Path.of(decompDir).normalize().toAbsolutePath().toFile(), Map.of(IFernflowerPreferences.INCLUDE_JAVA_RUNTIME, JrtFinder.CURRENT), new GradlePrintStreamLogger(this), SaveType.FOLDER) {}; //constructor is protected, have to subclass...
+
 		Path compiledDir = Path.of(this.compiledDir);
+		DecompilerBuilder b = new DecompilerBuilder(this);
+		b.setDecompDest(Path.of(decompDir));
 		
 		/*
 		 * Add jars to decompile
@@ -53,7 +50,7 @@ public class DecompileJarsTask extends DefaultTask {
 					case "scratchpad.jar":
 					case "wildermyth.jar":
 						System.out.println("Adding " + file.toAbsolutePath().normalize().toString() + " as input for the decompiler.");
-						consoleDecompiler.addSource(file.normalize().toAbsolutePath().toFile());
+						b.addJarsToDecomp(file.normalize().toAbsolutePath());
 						return FileVisitResult.CONTINUE;
 				}
 				return FileVisitResult.CONTINUE;
@@ -86,13 +83,15 @@ public class DecompileJarsTask extends DefaultTask {
 						return FileVisitResult.CONTINUE;
 				}
 				System.out.println("Adding " + file.toAbsolutePath().normalize().toString() + " as library for the decompiler.");
-				consoleDecompiler.addLibrary(file.normalize().toAbsolutePath().toFile());
+				b.addLibraries(file.normalize().toAbsolutePath());
 				return FileVisitResult.CONTINUE;
 			}
 			
 		});
 		
-		consoleDecompiler.decompileContext();
+		WilderWorkspaceDecompiler decompiler = b.build();
+		decompiler.decompile();
+		
 	}
 
 	public String getCompiledDir() {

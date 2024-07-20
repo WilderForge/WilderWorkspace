@@ -24,6 +24,7 @@ dependencies {
     implementation group: 'org.apache.commons', name: 'commons-lang3', version: commonsLangVersion
     implementation group: 'org.apache.commons', name: 'commons-text', version: commonsTextVersion
     implementation group: 'commons-io', name: 'commons-io', version: commonsIOVersion
+    implementation group: 'net.fabricmc', name: 'fabric-loom', version: loomVersion
     implementation group: 'org.vineflower', name: 'vineflower', version: vineFlowerVersion
 }
 
@@ -37,6 +38,7 @@ task processSource(type: Sync) {
     inputs.property 'commonsLangVersion', commonsLangVersion
     inputs.property 'commonsIOVersion', commonsIOVersion
     inputs.property 'commonsTextVersion', commonsTextVersion
+    inputs.property 'loomVersion', loomVersion
     inputs.property 'vineFlowerVersion', vineFlowerVersion
     
     filter(ReplaceTokens, tokens: [
@@ -44,6 +46,7 @@ task processSource(type: Sync) {
         commonsLangVersion: commonsLangVersion,
         commonsTextVersion: commonsTextVersion,
         commonsIOVersion: commonsIOVersion,
+        loomVersion: loomVersion,
         vineFlowerVersion: vineFlowerVersion
     ])
 }
@@ -51,14 +54,6 @@ task processSource(type: Sync) {
 compileJava {
     source = fileTree(dir: "$buildDir/processedSrc", include: '**/*.java')
     dependsOn processSource
-}
-
-sourceSets {
-    main {
-        java {
-            srcDirs = ["$buildDir/processedSrc"]
-        }
-    }
 }
 
 def pom2;

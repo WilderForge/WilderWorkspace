@@ -33,6 +33,10 @@ public enum GameJars {
 		return dir.resolve(name);
 	}
 	
+	public String getJarName() {
+		return name;
+	}
+	
 	public static GameJars fromString(String name) {
 		for(GameJars jar : values()) {
 			if(jar.name.equals(name)) {
@@ -44,6 +48,16 @@ public enum GameJars {
 	}
 	
 	public static GameJars fromPath(Path path) {
+		if(path == null) {return null;}; 
 		return fromString(path.getFileName().toString());
+	}
+	
+	public static GameJars fromPathString(String pathString) {
+		if(pathString == null) {return null;};
+		return fromPath(Path.of(pathString));
+	}
+	
+	public String toString() {
+		return name();
 	}
 }

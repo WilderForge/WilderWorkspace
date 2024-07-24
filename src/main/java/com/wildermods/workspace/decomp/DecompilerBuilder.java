@@ -76,7 +76,7 @@ public class DecompilerBuilder {
 	}
 	
 	public Path getDecompDest() {
-		return decompDest;
+		return decompDest.resolve("decomp");
 	}
 	
 	public Path getLinemapDest() {

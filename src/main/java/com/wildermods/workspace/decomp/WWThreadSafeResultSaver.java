@@ -33,7 +33,7 @@ public class WWThreadSafeResultSaver extends ThreadSafeResultSaver implements IR
 		Path outputDir = this.outputDir.get();
 		Path lineMapDir = this.lineMapDir.get();
 		String key = path + "/" + archiveName;
-		File file = outputDir.resolve(archiveName.substring(0, archiveName.length() - 4)).normalize().toAbsolutePath().toFile();
+		File file = outputDir.resolve(archiveName).normalize().toAbsolutePath().toFile();
 
 		try {
 			

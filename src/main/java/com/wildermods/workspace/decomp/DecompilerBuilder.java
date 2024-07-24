@@ -80,7 +80,7 @@ public class DecompilerBuilder {
 	}
 	
 	public Path getLinemapDest() {
-		return decompDest.getParent().resolve("linemaps");
+		return decompDest.resolve("linemaps");
 	}
 	
 	public WilderWorkspaceDecompiler build() {

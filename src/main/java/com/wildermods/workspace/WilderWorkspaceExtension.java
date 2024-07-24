@@ -25,7 +25,7 @@ public class WilderWorkspaceExtension {
 		this.project = project;
 		this.patchline = project.getName() + " " + project.getVersion();
 		this.gameDestDir = project.file("bin").toString();
-		this.decompDir = Path.of(gameDestDir).resolve("decomp").toString();
+		this.decompDir = Path.of(gameDestDir).toString();
 	}
 	
 	public String getPlatform() {

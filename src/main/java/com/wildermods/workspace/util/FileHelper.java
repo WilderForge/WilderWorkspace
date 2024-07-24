@@ -7,6 +7,9 @@ import java.nio.file.attribute.BasicFileAttributes;
 
 public class FileHelper {
 
+	public static final Path mainDir = Path.of("");
+	public static final Path libDir = mainDir.resolve("lib");
+	
 	public static class IgnoreSymbolicVisitor<T> extends SimpleFileVisitor<T> {
 		@Override
 		public FileVisitResult preVisitDirectory(T t, BasicFileAttributes attrs) {

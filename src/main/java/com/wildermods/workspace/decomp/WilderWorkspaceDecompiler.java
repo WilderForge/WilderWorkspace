@@ -25,6 +25,7 @@ public class WilderWorkspaceDecompiler {
 				Map.of(
 					IFernflowerPreferences.DECOMPILE_GENERIC_SIGNATURES, "1",
 					IFernflowerPreferences.BYTECODE_SOURCE_MAPPING, "1",
+					IFernflowerPreferences.DUMP_CODE_LINES, "1",
 					IFernflowerPreferences.REMOVE_SYNTHETIC, "1",
 					IFernflowerPreferences.LOG_LEVEL, "trace",
 					IFernflowerPreferences.THREADS, String.valueOf(metaData.numberOfThreads()),
@@ -34,7 +35,7 @@ public class WilderWorkspaceDecompiler {
 		);
 		
 		options.putAll(metaData.options());
-
+		
 		IResultSaver saver = new WWThreadSafeResultSaver(
 				() -> builder.getDecompDest(), 
 				() -> builder.getLinemapDest()

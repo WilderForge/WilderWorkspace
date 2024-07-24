@@ -74,6 +74,7 @@ public class CopyLocalDependenciesToWorkspaceTask extends DefaultTask {
 				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
 					Path target = destDir.resolve(installDir.relativize(file));
 					if(!overwrite && Files.exists(target)) {
+						LOGGER.info("Not copying " + target + " - File at target location already exists.");
 						return FileVisitResult.CONTINUE;
 					}
 					Files.copy(file, target, StandardCopyOption.REPLACE_EXISTING);

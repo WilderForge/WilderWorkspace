@@ -13,9 +13,11 @@ import java.util.jar.JarOutputStream;
 import java.util.jar.Manifest;
 import java.util.zip.ZipOutputStream;
 
+import org.jetbrains.java.decompiler.main.extern.IResultSaver;
+
 import net.fabricmc.loom.decompilers.vineflower.ThreadSafeResultSaver;
 
-public class WWThreadSafeResultSaver extends ThreadSafeResultSaver {
+public class WWThreadSafeResultSaver extends ThreadSafeResultSaver implements IResultSaver {
 	
 	private final Supplier<Path> outputDir;
 	private final Supplier<Path> lineMapDir;
@@ -31,7 +33,7 @@ public class WWThreadSafeResultSaver extends ThreadSafeResultSaver {
 		Path outputDir = this.outputDir.get();
 		Path lineMapDir = this.lineMapDir.get();
 		String key = path + "/" + archiveName;
-		File file = outputDir.resolve(archiveName).normalize().toAbsolutePath().toFile();
+		File file = outputDir.resolve(archiveName.substring(0, archiveName.length() - 4)).normalize().toAbsolutePath().toFile();
 
 		try {
 			

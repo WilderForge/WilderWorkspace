@@ -64,6 +64,10 @@ labels:
         color: "ffc6dc"
         description: "This issue or pull request is postponed for a later date"
     -
+        name: "Status - Help Wanted"
+        color: "a6de00"
+        description: "Assistance requested"
+    -
         name: "Status - Resolved"
         color: "0e8a16"
         description: "This issue or pull request was valid and was resolved"
@@ -71,7 +75,6 @@ labels:
         name: "Status - Won't Fix"
         color: "ffffff"
         description: "This will not be worked on"
-
     -
         name: "Status - Unable to Reproduce"
         color: "ffffff"

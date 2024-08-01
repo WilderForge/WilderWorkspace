@@ -13,6 +13,12 @@ import org.gradle.api.tasks.TaskAction;
 
 import com.wildermods.workspace.util.FileHelper.IgnoreSymbolicVisitor;
 
+/**
+ * Task to clear the  workspace.
+ * <p>
+ * This task deletes the specified directories for dependencies and decompiled sources. By defualt, the entirety of './bin'
+ * </p>
+ */
 public class ClearLocalDependenciesTask extends DefaultTask {
 
 	@Input

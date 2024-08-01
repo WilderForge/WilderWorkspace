@@ -21,6 +21,13 @@ import com.wildermods.workspace.decomp.WilderWorkspaceDecompiler;
 import net.fabricmc.loom.decompilers.ClassLineNumbers;
 import net.fabricmc.loom.decompilers.LineNumberRemapper;
 
+/**
+ * Task to decompile JAR files and remap their line numbers.
+ * <p>
+ * This task identifies specific JAR files to decompile, adds other JAR files as libraries, and processes 
+ * line number mappings to produce decompiled sources with accurate line numbers.
+ * </p>
+ */
 public class DecompileJarsTask extends DefaultTask {
 
 	@Input
@@ -142,6 +149,14 @@ public class DecompileJarsTask extends DefaultTask {
 		
 	}
 	
+    /**
+     * Remaps the line numbers of the specified JAR file using the provided line map.
+     * 
+     * @param linemap the path to the line map file
+     * @param jarToRemap the path to the JAR file to remap
+     * @param remappedJarDest the destination path for the remapped JAR file
+     * @throws Throwable if an error occurs during remapping
+     */
 	private void remap(Path linemap, Path jarToRemap, Path remappedJarDest) throws Throwable {
 		System.out.println("Remapping " + jarToRemap + " to " + remappedJarDest);
 		ClassLineNumbers lineNumbers = ClassLineNumbers.readMappings(linemap);
@@ -152,18 +167,38 @@ public class DecompileJarsTask extends DefaultTask {
 		remapper.process(jarToRemap, remappedJarDest);
 	}
 
+    /**
+     * Gets the directory containing the compiled JAR files.
+     * 
+     * @return the compiled directory path as a string
+     */
 	public String getCompiledDir() {
 		return compiledDir;
 	}
 
+    /**
+     * Sets the directory containing the compiled JAR files.
+     * 
+     * @param compiledDir the compiled directory path as a string
+     */
 	public void setCompiledDir(String compiledDir) {
 		this.compiledDir = compiledDir;
 	}
 
+	 /**
+     * Gets the directory where the decompiled sources will be stored.
+     * 
+     * @return the decompiled directory path as a string
+     */
 	public String getDecompDir() {
 		return decompDir;
 	}
 
+    /**
+     * Sets the directory where the decompiled sources will be stored.
+     * 
+     * @param decompDir the decompiled directory path as a string
+     */
 	public void setDecompDir(String decompDir) {
 		this.decompDir = decompDir;
 	}

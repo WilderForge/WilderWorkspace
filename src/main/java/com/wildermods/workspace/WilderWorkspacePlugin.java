@@ -1,10 +1,13 @@
 package com.wildermods.workspace;
 
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
+import org.gradle.api.initialization.Settings;
 import org.gradle.api.initialization.dsl.ScriptHandler;
 import org.gradle.api.logging.LogLevel;
+import org.gradle.api.tasks.Copy;
 import org.gradle.internal.classloader.VisitableURLClassLoader;
 import org.gradle.plugins.ide.eclipse.EclipsePlugin;
 import org.gradle.plugins.ide.eclipse.model.Classpath;
@@ -14,6 +17,7 @@ import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.eclipse.model.FileReference;
 import org.gradle.plugins.ide.eclipse.model.Library;
 import org.gradle.plugins.ide.idea.IdeaPlugin;
+import org.gradle.vcs.SourceControl;
 
 import com.wildermods.workspace.tasks.ClearLocalDependenciesTask;
 import com.wildermods.workspace.tasks.CopyLocalDependenciesToWorkspaceTask;
@@ -27,20 +31,35 @@ import java.util.Set;
 
 import org.gradle.api.Plugin;
 
-public class WilderWorkspacePlugin implements Plugin<Project> {
+public class WilderWorkspacePlugin implements Plugin<Object> {
+	
 	public static final String VERSION = "@workspaceVersion@";
+	
+	public void apply(Object object) {
+		if(object instanceof Project) {
+			apply((Project)object);
+		}
+		else if (object instanceof Settings) {
+			apply((Settings)object);
+		}
+		else {
+			throw new Error();
+		}
+	}
 	
 	public void apply(Project project) {
 		
-		project.getLogger().log(LogLevel.INFO, "Initializing WilderWorkspace plugin version " + VERSION);
+		project.getLogger().log(LogLevel.INFO, "Initializing WilderWorkspace PROJECT plugin version " + VERSION);
 		try {
 
-			addDependencies(project);
+			addPluginDependencies(project);
 			
 			WilderWorkspaceExtension extension = project.getExtensions().create("wilderWorkspace", WilderWorkspaceExtension.class);
 			extension.loadUserConfig();
 			
 			WWProjectContext context = new WWProjectContext(project, extension) {};
+			
+			setupConfigurations(context);
 			
 			setupTasks(context);
 			
@@ -57,7 +76,18 @@ public class WilderWorkspacePlugin implements Plugin<Project> {
 		project.getLogger().log(LogLevel.INFO, "Initialized WilderWorkspace plugin version {$workspaceVersion}");
 	}
 	
-	private static void addDependencies(Project project) {
+	public void apply(Settings settings) {
+		SourceControl sourceControl = settings.getSourceControl();
+		for(WWProjectDependency dependency : WWProjectDependency.values()) {
+			if(dependency.getRepo() != null) {
+				sourceControl.gitRepository(dependency.getRepo(), repo -> {
+					repo.producesModule(dependency.getModule());
+				});
+			}
+		}
+	}
+	
+	private static void addPluginDependencies(Project project) {
 		ScriptHandler buildscript = project.getBuildscript();
 		{
 			
@@ -68,7 +98,7 @@ public class WilderWorkspacePlugin implements Plugin<Project> {
 			MavenArtifactRepository mavenLocal = buildscript.getRepositories().mavenLocal();
 			
 			DependencyHandler dependencies = buildscript.getDependencies();
-			for(Dependencies dependency : Dependencies.values()) {
+			for(PluginDependency dependency : PluginDependency.values()) {
 				dependencies.add(ScriptHandler.CLASSPATH_CONFIGURATION, dependency.toString());
 			}
 		}
@@ -86,6 +116,12 @@ public class WilderWorkspacePlugin implements Plugin<Project> {
 		}));
 	}
 	
+	private static void setupConfigurations(WWProjectContext context) {
+		Project project = context.getProject();
+		Configuration fabricDep = project.getConfigurations().create(ProjectDependencyType.fabricDep.name());
+		Configuration fabricImpl = project.getConfigurations().create(ProjectDependencyType.fabricImpl.name());
+	}
+	
 	private static void setupTasks(WWProjectContext context) {
 		Project project = context.getProject();
 		WilderWorkspaceExtension extension = context.getWWExtension();
@@ -94,6 +130,8 @@ public class WilderWorkspacePlugin implements Plugin<Project> {
 			task.setPlatform(extension.getPlatform());
 			task.setPatchline(extension.getPatchline());
 			task.setDestDir(extension.getGameDestDir());
+			task.finalizedBy(project.getTasks().getByName("copyFabricDependencies"));
+			task.finalizedBy(project.getTasks().getByName("copyFabricImplementors"));
 		});
 		
 		project.getTasks().register("decompileJars", DecompileJarsTask.class, task -> {
@@ -118,6 +156,8 @@ public class WilderWorkspacePlugin implements Plugin<Project> {
 				DecompileJarsTask decompileTask = (DecompileJarsTask)project.getTasks().named("decompileJars").get();
 				return decompileTask;
 			}));
+			task.finalizedBy(project.getTasks().getByName("copyFabricDependencies"));
+			task.finalizedBy(project.getTasks().getByName("copyFabricImplementors"));
 		});
 		
 		project.getTasks().register("updateDecompWorkspace", CopyLocalDependenciesToWorkspaceTask.class, task -> {
@@ -136,10 +176,41 @@ public class WilderWorkspacePlugin implements Plugin<Project> {
 				return copyTask;
 			}));
 		});
+		
+		project.getTasks().register("copyFabricDependencies", Copy.class, task -> {
+			Configuration fabricDep = context.getProject().getConfigurations().getByName(ProjectDependencyType.fabricDep.name());
+			task.from(fabricDep);
+			task.into(Path.of(extension.getGameDestDir()).resolve("fabric"));
+		});
+		
+		project.getTasks().register("copyFabricImplementors", Copy.class, task -> {
+			Configuration fabricImpl = context.getProject().getConfigurations().getByName(ProjectDependencyType.fabricImpl.name());
+			task.from(fabricImpl);
+			task.into(extension.getGameDestDir());
+		});
 	}
 	
-    @SuppressWarnings({ "unchecked"})
+    
 	private static void setupPostEvaluations(WWProjectContext context) {
+		addWorkspaceDependencies(context);
+        setupEclipsePlugin(context);
+    }
+	
+	private static void addWorkspaceDependencies(WWProjectContext context) {
+		Project project = context.getProject();
+		project.afterEvaluate((proj -> {
+			DependencyHandler dependencyHandler = proj.getDependencies();
+			
+			
+			
+			for(WWProjectDependency dependency : WWProjectDependency.values()) {
+				dependencyHandler.add(dependency.getType().toString(), dependency.toString());
+			}
+		}));
+	}
+    
+	@SuppressWarnings({ "unchecked"})
+    private static void setupEclipsePlugin(WWProjectContext context) {
         Project project = context.getProject();
         WilderWorkspaceExtension extension = context.getWWExtension();
         project.afterEvaluate(proj -> {

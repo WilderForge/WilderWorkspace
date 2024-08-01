@@ -34,20 +34,47 @@ task processSource(type: Sync) {
     from sourceSets.main.java.srcDirs
     into "$buildDir/processedSrc"
     
+    //The version of the WilderWorkspace gradle plugin
     inputs.property 'workspaceVersion', workspaceVersion
-    inputs.property 'commonsLangVersion', commonsLangVersion
+    
+    inputs.property 'accessWidenerVersion', accessWidenerVersion
+    inputs.property 'tinyMappingsVersion', tinyMappingsVersion
+    inputs.property 'mixinVersion', mixinVersion
+    inputs.property 'guavaVersion', guavaVersion
+    inputs.property 'gsonVersion', gsonVersion
+    inputs.property 'providerVersion', providerVersion
+    inputs.property 'asmVersion', asmVersion
+    inputs.property 'fabricLoaderVersion', fabricLoaderVersion
+    inputs.property 'wilderLoaderVersion', wilderLoaderVersion
+    
+    //dependencies for building and running WilderWorkspace gradle plugin itself
     inputs.property 'commonsIOVersion', commonsIOVersion
+    inputs.property 'commonsLangVersion', commonsLangVersion
     inputs.property 'commonsTextVersion', commonsTextVersion
-    inputs.property 'loomVersion', loomVersion
     inputs.property 'vineFlowerVersion', vineFlowerVersion
+    inputs.property 'loomVersion', loomVersion
     
     filter(ReplaceTokens, tokens: [
+        //The version of the WilderWorkspace gradle plugin
         workspaceVersion: workspaceVersion, 
+        
+        //dependencies that projects using WilderWorkspace will need in order to mod Wildermyth
+        accessWidenerVersion: accessWidenerVersion,
+        tinyMappingsVersion: tinyMappingsVersion,
+        mixinVersion: mixinVersion,
+        guavaVersion: guavaVersion,
+        gsonVersion: gsonVersion,
+        providerVersion: providerVersion,
+        asmVersion: asmVersion,
+        fabricLoaderVersion: fabricLoaderVersion,
+        wilderLoaderVersion: wilderLoaderVersion,
+        
+        //dependencies for building and running WilderWorkspace gradle plugin itself
+        commonsIOVersion: commonsIOVersion,
         commonsLangVersion: commonsLangVersion,
         commonsTextVersion: commonsTextVersion,
-        commonsIOVersion: commonsIOVersion,
+        vineFlowerVersion: vineFlowerVersion,
         loomVersion: loomVersion,
-        vineFlowerVersion: vineFlowerVersion
     ])
 }
 

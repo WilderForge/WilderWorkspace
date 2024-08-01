@@ -25,6 +25,13 @@ import com.wildermods.workspace.WilderWorkspaceExtension;
 import com.wildermods.workspace.util.OS;
 import com.wildermods.workspace.util.Platform;
 
+/**
+ * Task to copy local dependencies to the workspace.
+ * <p>
+ * This task copies the necessary files from the game installation directory to a specified workspace directory.
+ * It supports the game platforms as defined in {@link Platform} and allows for custom directories.
+ * </p>
+ */
 public class CopyLocalDependenciesToWorkspaceTask extends DefaultTask {
 	
 	private static final Logger LOGGER = Logging.getLogger(CopyLocalDependenciesToWorkspaceTask.class);

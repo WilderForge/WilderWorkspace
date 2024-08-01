@@ -1,10 +1,13 @@
 package com.wildermods.workspace;
 
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
+import org.gradle.api.initialization.Settings;
 import org.gradle.api.initialization.dsl.ScriptHandler;
 import org.gradle.api.logging.LogLevel;
+import org.gradle.api.tasks.Copy;
 import org.gradle.internal.classloader.VisitableURLClassLoader;
 import org.gradle.plugins.ide.eclipse.EclipsePlugin;
 import org.gradle.plugins.ide.eclipse.model.Classpath;
@@ -14,6 +17,7 @@ import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.plugins.ide.eclipse.model.FileReference;
 import org.gradle.plugins.ide.eclipse.model.Library;
 import org.gradle.plugins.ide.idea.IdeaPlugin;
+import org.gradle.vcs.SourceControl;
 
 import com.wildermods.workspace.tasks.ClearLocalDependenciesTask;
 import com.wildermods.workspace.tasks.CopyLocalDependenciesToWorkspaceTask;
@@ -27,20 +31,68 @@ import java.util.Set;
 
 import org.gradle.api.Plugin;
 
-public class WilderWorkspacePlugin implements Plugin<Project> {
+/**
+ * A Gradle plugin for setting up and managing the WilderWorkspace development environment.
+ * <p>
+ * This plugin configures various tasks and settings required for working with the WilderWorkspace project,
+ * including setting up dependencies, configuring tasks, and integrating with IDEs like Eclipse and IntelliJ IDEA.
+ * </p>
+ * <p>
+ * It supports:
+ * <ul>
+ * <li>Adding plugin dependencies</li>
+ * <li>Setting up configurations and tasks</li>
+ * <li>Configuring IDE plugins (Eclipse and IntelliJ IDEA)</li>
+ * <li>Handling post-evaluation of the project for dependency management</li>
+ * </ul>
+ * </p>
+ */
+
+public class WilderWorkspacePlugin implements Plugin<Object> {
+	
+	/** The version of the WilderWorkspace plugin. */
 	public static final String VERSION = "@workspaceVersion@";
 	
+    /**
+     * Applies the plugin to either a {@link Project} or {@link Settings}.
+     *
+     * @param object the object to apply the plugin to
+     * @throws Error if the object is neither a {@link Project} nor a {@link Settings}
+     */
+	public void apply(Object object) {
+		if(object instanceof Project) {
+			apply((Project)object);
+		}
+		else if (object instanceof Settings) {
+			apply((Settings)object);
+		}
+		else {
+			throw new Error("WilderWorkspacePlugin can only be applied to projects and settings");
+		}
+	}
+	
+    /**
+     * Applies the plugin to the project.
+     * <p>
+     * This method initializes the plugin, sets up dependencies, creates the WilderWorkspace extension,
+     * configures tasks, and handles post-evaluation tasks.
+     * </p>
+     *
+     * @param project the Gradle project to apply the plugin to
+     */
 	public void apply(Project project) {
 		
-		project.getLogger().log(LogLevel.INFO, "Initializing WilderWorkspace plugin version " + VERSION);
+		project.getLogger().log(LogLevel.INFO, "Initializing WilderWorkspace PROJECT plugin version " + VERSION);
 		try {
 
-			addDependencies(project);
+			addPluginDependencies(project);
 			
 			WilderWorkspaceExtension extension = project.getExtensions().create("wilderWorkspace", WilderWorkspaceExtension.class);
 			extension.loadUserConfig();
 			
 			WWProjectContext context = new WWProjectContext(project, extension) {};
+			
+			setupConfigurations(context);
 			
 			setupTasks(context);
 			
@@ -54,10 +106,37 @@ public class WilderWorkspacePlugin implements Plugin<Project> {
 			throw new LinkageError("Failed to initialize WilderWorkspace " + VERSION, t);
 		}
 		
-		project.getLogger().log(LogLevel.INFO, "Initialized WilderWorkspace plugin version {$workspaceVersion}");
+		project.getLogger().log(LogLevel.INFO, "Initialized WilderWorkspace plugin version " + VERSION);
 	}
 	
-	private static void addDependencies(Project project) {
+    /**
+     * Applies the plugin to the given settings.
+     * <p>
+     * This method sets up source control repositories for project dependencies as defined in {@link WWProjectDependency}.
+     * </p>
+     *
+     * @param settings the Gradle settings to apply the plugin to
+     */
+	public void apply(Settings settings) {
+		SourceControl sourceControl = settings.getSourceControl();
+		for(WWProjectDependency dependency : WWProjectDependency.values()) {
+			if(dependency.getRepo() != null) {
+				sourceControl.gitRepository(dependency.getRepo(), repo -> {
+					repo.producesModule(dependency.getModule());
+				});
+			}
+		}
+	}
+	
+    /**
+     * Adds plugin dependencies to the project's build script classpath.
+     * <p>
+     * This method configures repositories and adds dependencies required for the plugin.
+     * </p>
+     *
+     * @param project the Gradle project
+     */
+	private static void addPluginDependencies(Project project) {
 		ScriptHandler buildscript = project.getBuildscript();
 		{
 			
@@ -68,7 +147,7 @@ public class WilderWorkspacePlugin implements Plugin<Project> {
 			MavenArtifactRepository mavenLocal = buildscript.getRepositories().mavenLocal();
 			
 			DependencyHandler dependencies = buildscript.getDependencies();
-			for(Dependencies dependency : Dependencies.values()) {
+			for(PluginDependency dependency : PluginDependency.values()) {
 				dependencies.add(ScriptHandler.CLASSPATH_CONFIGURATION, dependency.toString());
 			}
 		}
@@ -86,6 +165,28 @@ public class WilderWorkspacePlugin implements Plugin<Project> {
 		}));
 	}
 	
+    /**
+     * Sets up configurations required by the plugin.
+     * <p>
+     * This method creates configurations for Fabric dependencies and implementations.
+     * </p>
+     *
+     * @param context the project context
+     */
+	private static void setupConfigurations(WWProjectContext context) {
+		Project project = context.getProject();
+		Configuration fabricDep = project.getConfigurations().create(ProjectDependencyType.fabricDep.name());
+		Configuration fabricImpl = project.getConfigurations().create(ProjectDependencyType.fabricImpl.name());
+	}
+	
+    /**
+     * Sets up tasks for the plugin.
+     * <p>
+     * This method registers tasks for copying local dependencies, decompiling JARs, and configuring the workspace.
+     * </p>
+     *
+     * @param context the project context
+     */
 	private static void setupTasks(WWProjectContext context) {
 		Project project = context.getProject();
 		WilderWorkspaceExtension extension = context.getWWExtension();
@@ -94,6 +195,8 @@ public class WilderWorkspacePlugin implements Plugin<Project> {
 			task.setPlatform(extension.getPlatform());
 			task.setPatchline(extension.getPatchline());
 			task.setDestDir(extension.getGameDestDir());
+			task.finalizedBy(project.getTasks().getByName("copyFabricDependencies"));
+			task.finalizedBy(project.getTasks().getByName("copyFabricImplementors"));
 		});
 		
 		project.getTasks().register("decompileJars", DecompileJarsTask.class, task -> {
@@ -118,6 +221,8 @@ public class WilderWorkspacePlugin implements Plugin<Project> {
 				DecompileJarsTask decompileTask = (DecompileJarsTask)project.getTasks().named("decompileJars").get();
 				return decompileTask;
 			}));
+			task.finalizedBy(project.getTasks().getByName("copyFabricDependencies"));
+			task.finalizedBy(project.getTasks().getByName("copyFabricImplementors"));
 		});
 		
 		project.getTasks().register("updateDecompWorkspace", CopyLocalDependenciesToWorkspaceTask.class, task -> {
@@ -136,10 +241,64 @@ public class WilderWorkspacePlugin implements Plugin<Project> {
 				return copyTask;
 			}));
 		});
+		
+		project.getTasks().register("copyFabricDependencies", Copy.class, task -> {
+			Configuration fabricDep = context.getProject().getConfigurations().getByName(ProjectDependencyType.fabricDep.name());
+			task.from(fabricDep);
+			task.into(Path.of(extension.getGameDestDir()).resolve("fabric"));
+		});
+		
+		project.getTasks().register("copyFabricImplementors", Copy.class, task -> {
+			Configuration fabricImpl = context.getProject().getConfigurations().getByName(ProjectDependencyType.fabricImpl.name());
+			task.from(fabricImpl);
+			task.into(extension.getGameDestDir());
+		});
 	}
 	
-    @SuppressWarnings({ "unchecked"})
+    /**
+     * Sets up post-evaluation tasks for the plugin.
+     * <p>
+     * This method adds workspace dependencies and configures IDE plugins.
+     * </p>
+     *
+     * @param context the project context
+     */
 	private static void setupPostEvaluations(WWProjectContext context) {
+		addWorkspaceDependencies(context);
+        setupEclipsePlugin(context);
+    }
+	
+    /**
+     * Adds workspace dependencies to the project after evaluation.
+     * <p>
+     * This method ensures that project dependencies are added to the correct configurations.
+     * </p>
+     *
+     * @param context the project context
+     */
+	private static void addWorkspaceDependencies(WWProjectContext context) {
+		Project project = context.getProject();
+		project.afterEvaluate((proj -> {
+			DependencyHandler dependencyHandler = proj.getDependencies();
+			
+			
+			
+			for(WWProjectDependency dependency : WWProjectDependency.values()) {
+				dependencyHandler.add(dependency.getType().toString(), dependency.toString());
+			}
+		}));
+	}
+    
+    /**
+     * Configures the Eclipse plugin after project evaluation.
+     * <p>
+     * This method integrates with the Eclipse plugin to set source paths for game JARs.
+     * </p>
+     *
+     * @param context the project context
+     */
+	@SuppressWarnings({ "unchecked"})
+    private static void setupEclipsePlugin(WWProjectContext context) {
         Project project = context.getProject();
         WilderWorkspaceExtension extension = context.getWWExtension();
         project.afterEvaluate(proj -> {

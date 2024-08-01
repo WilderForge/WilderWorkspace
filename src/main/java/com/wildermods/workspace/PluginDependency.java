@@ -2,7 +2,14 @@ package com.wildermods.workspace;
 
 import org.gradle.api.artifacts.Dependency;
 
-enum Dependencies implements Dependency {
+/**
+ * A PluginDependency represents a dependency that is required to build and run
+ * the WilderWorkspace gradle plugin itself.
+ * 
+ * @see {@link WWProjectDependency} for dependencies that modded environments made
+ * using WilderWorkspace will need in order to run
+ */
+enum PluginDependency implements Dependency {
 
 		COMMONS_IO("commons-io", "commons-io", "@commonsIOVersion@"),
 		COMMONS_LANG("org.apache.commons", "commons-lang3", "@commonsLangVersion@"),
@@ -19,7 +26,7 @@ enum Dependencies implements Dependency {
 	private String reason;
 
 	
-	private Dependencies(String groupID, String artifact, String version) {
+	private PluginDependency(String groupID, String artifact, String version) {
 		this.groupID = groupID;
 		this.artifact = artifact;
 		this.version = version;

@@ -5,6 +5,13 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 
+/**
+ * Utility class for file operations within the WilderWorkspace plugin.
+ * <p>
+ * This class provides static methods and nested classes to assist with common file operations, such as determining
+ * relative paths and handling symbolic links during file traversal.
+ * </p>
+ */
 public class FileHelper {
 
 	public static final Path mainDir = Path.of("");

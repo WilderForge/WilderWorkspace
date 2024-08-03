@@ -177,6 +177,11 @@ public class WilderWorkspacePlugin implements Plugin<Object> {
 		Project project = context.getProject();
 		Configuration fabricDep = project.getConfigurations().create(ProjectDependencyType.fabricDep.name());
 		Configuration fabricImpl = project.getConfigurations().create(ProjectDependencyType.fabricImpl.name());
+		
+		DependencyHandler dependencies = project.getDependencies();
+		for(WWProjectDependency dependency : WWProjectDependency.values()) {
+			dependencies.add("implementation", dependency.toString());
+		}
 	}
 	
     /**

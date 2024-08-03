@@ -3,6 +3,11 @@ package com.wildermods.workspace;
 public enum ProjectDependencyType {
 
 	/**
+	 * normal gradle api dependency type
+	 */
+	api,
+	
+	/**
 	 * normal gradle compile time only dependencies
 	 */
 	compileOnly,

@@ -19,7 +19,7 @@ import com.wildermods.workspace.util.FileHelper.IgnoreSymbolicVisitor;
  * This task deletes the specified directories for dependencies and decompiled sources. By defualt, the entirety of './bin'
  * </p>
  */
-public class ClearLocalDependenciesTask extends DefaultTask {
+public class ClearLocalRuntimeTask extends DefaultTask {
 
 	@Input
 	private String destDir = getProject().file("bin").toString();

@@ -36,10 +36,9 @@ public enum WWProjectDependency implements Dependency {
 		commonsText(fabricDep, "org.apache.commons", "commons-text", "@commonsTextVersion@"),
 		accessWidener(fabricDep, "net.fabricmc", "access-widener", "@accessWidenerVersion@"),
 		tinyMappingsParser(fabricDep, "net.fabricmc", "tiny-mappings-parser", "@tinyMappingsVersion@"),
-		mixin(fabricDep, "org.spongepowered", "mixin", "@mixinVersion@"),
+		mixin(fabricDep, "net.fabricmc", "sponge-mixin", "@mixinVersion@"),
 		guava(fabricDep, "com.google.guava", "guava", "@guavaVersion@"),
 		gson(fabricDep, "com.google.code.gson", "gson", "@gsonVersion@"),
-		gameProvider(fabricDep, "com.wildermods", "provider", "@providerVersion@", "https://wildermods.com/WildermythGameProvider.git"),
 		
 		asm(fabricDep, "org.ow2.asm", "asm", "@asmVersion@"),
 		asmAnalysis(fabricDep, "org.ow2.asm", "asm-analysis", "@asmVersion@"),
@@ -49,8 +48,7 @@ public enum WWProjectDependency implements Dependency {
 		
 		
 		fabricLoader(fabricImpl, "net.fabricmc", "fabric-loader", "@fabricLoaderVersion@"),
-		wilderLoader(fabricImpl, "com.wildermods", "wilderloader", "@wilderLoaderVersion@", "https://wildermods.com/WilderLoader.git")
-		
+		gameProvider(fabricImpl, "com.wildermods", "provider", "@providerVersion@", "https://wildermods.com/WildermythGameProvider.git"),
 	;
 
 	private final ProjectDependencyType type;

@@ -45,7 +45,6 @@ task processSource(type: Sync) {
     inputs.property 'providerVersion', providerVersion
     inputs.property 'asmVersion', asmVersion
     inputs.property 'fabricLoaderVersion', fabricLoaderVersion
-    inputs.property 'wilderLoaderVersion', wilderLoaderVersion
     
     //dependencies for building and running WilderWorkspace gradle plugin itself
     inputs.property 'commonsIOVersion', commonsIOVersion
@@ -67,7 +66,6 @@ task processSource(type: Sync) {
         providerVersion: providerVersion,
         asmVersion: asmVersion,
         fabricLoaderVersion: fabricLoaderVersion,
-        wilderLoaderVersion: wilderLoaderVersion,
         
         //dependencies for building and running WilderWorkspace gradle plugin itself
         commonsIOVersion: commonsIOVersion,

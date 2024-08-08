@@ -19,7 +19,7 @@ import org.gradle.plugins.ide.eclipse.model.Library;
 import org.gradle.plugins.ide.idea.IdeaPlugin;
 import org.gradle.vcs.SourceControl;
 
-import com.wildermods.workspace.tasks.ClearLocalDependenciesTask;
+import com.wildermods.workspace.tasks.ClearLocalRuntimeTask;
 import com.wildermods.workspace.tasks.CopyLocalDependenciesToWorkspaceTask;
 import com.wildermods.workspace.tasks.DecompileJarsTask;
 import com.wildermods.workspace.util.ExceptionUtil;
@@ -178,6 +178,19 @@ public class WilderWorkspacePlugin implements Plugin<Object> {
 		Configuration fabricDep = project.getConfigurations().create(ProjectDependencyType.fabricDep.name());
 		Configuration fabricImpl = project.getConfigurations().create(ProjectDependencyType.fabricImpl.name());
 		
+		project.getConfigurations().create(ProjectDependencyType.resolvableImplementation.name(), configuration -> {
+		    configuration.extendsFrom(project.getConfigurations().getByName("implementation"));
+		    configuration.setCanBeResolved(true);
+		    configuration.setCanBeConsumed(false);
+		});
+		
+		project.getConfigurations().create(ProjectDependencyType.excludedFabricDeps.name(), configuration -> {
+		    configuration.extendsFrom(project.getConfigurations().getByName(ProjectDependencyType.fabricDep.name()));
+		    configuration.extendsFrom(project.getConfigurations().getByName(ProjectDependencyType.fabricImpl.name()));
+		    configuration.setCanBeResolved(true);
+		    configuration.setCanBeConsumed(false);
+		});
+		
 		DependencyHandler dependencies = project.getDependencies();
 		for(WWProjectDependency dependency : WWProjectDependency.values()) {
 			dependencies.add("implementation", dependency.toString());
@@ -202,6 +215,7 @@ public class WilderWorkspacePlugin implements Plugin<Object> {
 			task.setDestDir(extension.getGameDestDir());
 			task.finalizedBy(project.getTasks().getByName("copyFabricDependencies"));
 			task.finalizedBy(project.getTasks().getByName("copyFabricImplementors"));
+			task.finalizedBy(project.getTasks().getByName("copyProjectDependencies"));
 		});
 		
 		project.getTasks().register("decompileJars", DecompileJarsTask.class, task -> {
@@ -209,7 +223,7 @@ public class WilderWorkspacePlugin implements Plugin<Object> {
 			task.setDecompDir(extension.getDecompDir());
 		});
 		
-		project.getTasks().register("clearLocalDependencies", ClearLocalDependenciesTask.class, task -> {
+		project.getTasks().register("clearLocalRuntime", ClearLocalRuntimeTask.class, task -> {
 			task.setDecompDir(extension.getDecompDir());
 			task.setDestDir(extension.getGameDestDir());
 		});
@@ -257,6 +271,21 @@ public class WilderWorkspacePlugin implements Plugin<Object> {
 			Configuration fabricImpl = context.getProject().getConfigurations().getByName(ProjectDependencyType.fabricImpl.name());
 			task.from(fabricImpl);
 			task.into(extension.getGameDestDir());
+		});
+		
+		project.getTasks().register("copyProjectDependencies", Copy.class, task -> {
+		    Configuration resolvableImplementation = project.getConfigurations().getByName(ProjectDependencyType.resolvableImplementation.name());
+		    Configuration exclusionConfiguration = project.getConfigurations().getByName(ProjectDependencyType.excludedFabricDeps.name());
+
+		    // Get the files from the exclusion configuration
+		    Set<File> exclusionFiles = exclusionConfiguration.getResolvedConfiguration().getFiles();
+
+		    task.from(resolvableImplementation, copySpec -> {
+		        // Exclude files that are in the exclusion configuration
+		        copySpec.exclude(fileTreeElement -> exclusionFiles.contains(fileTreeElement.getFile()));
+		    });
+		    
+		    task.into(Path.of(extension.getGameDestDir()).resolve("fabric"));
 		});
 	}
 	

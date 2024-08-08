@@ -27,6 +27,22 @@ public enum ProjectDependencyType {
 	 * dependencies that are required to be in the "fabricPath" at runtime. Usually {@code ./bin/} is the default
 	 * location of where these dependencies are located
 	 */
-	fabricImpl;
+	fabricImpl,
 	
+	/**
+	 * All implementation dependencies (including configurations which extend 'implementation'
+	 * 
+	 * This configuration is resolvable by gradle.
+	 * 
+	 * For internal use only, used to copy all of the project's dependencies to the workspace.
+	 */
+	resolvableImplementation,
+	
+	/**
+	 * A configuration that includes {@link fabricDep} and {@link fabricImpl} dependencies.
+	 * 
+	 * For internal use only, used to exclude fabric dependencies when copying all of the
+	 * project's dependencies to the workspace
+	 */
+	excludedFabricDeps,
 }

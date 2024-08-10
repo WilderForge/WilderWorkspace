@@ -32,23 +32,11 @@ import java.net.URISyntaxException;
  * </p>
  */
 public enum WWProjectDependency implements Dependency {
-		
-		commonsText(fabricDep, "org.apache.commons", "commons-text", "@commonsTextVersion@"),
-		accessWidener(fabricDep, "net.fabricmc", "access-widener", "@accessWidenerVersion@"),
-		tinyMappingsParser(fabricDep, "net.fabricmc", "tiny-mappings-parser", "@tinyMappingsVersion@"),
-		mixin(fabricDep, "net.fabricmc", "sponge-mixin", "@mixinVersion@"),
-		guava(fabricDep, "com.google.guava", "guava", "@guavaVersion@"),
-		gson(fabricDep, "com.google.code.gson", "gson", "@gsonVersion@"),
-		
-		asm(fabricDep, "org.ow2.asm", "asm", "@asmVersion@"),
-		asmAnalysis(fabricDep, "org.ow2.asm", "asm-analysis", "@asmVersion@"),
-		asmCommons(fabricDep, "org.ow2.asm", "asm-commons", "@asmVersion@"),
-		asmTree(fabricDep, "org.ow2.asm", "asm-tree", "@asmVersion@"),
-		asmUtil(fabricDep, "org.ow2.asm", "asm-util", "@asmVersion@"),
-		
-		
+	
 		fabricLoader(fabricImpl, "net.fabricmc", "fabric-loader", "@fabricLoaderVersion@"),
+		fabricLoaderDepsJson(retrieveJson, "net.fabricmc", "fabric-loader", "@fabricLoaderVersion@"),
 		gameProvider(fabricImpl, "com.wildermods", "provider", "@providerVersion@", "https://wildermods.com/WildermythGameProvider.git"),
+		
 	;
 
 	private final ProjectDependencyType type;

@@ -45,4 +45,6 @@ public enum ProjectDependencyType {
 	 * project's dependencies to the workspace
 	 */
 	excludedFabricDeps,
+	
+	retrieveJson
 }

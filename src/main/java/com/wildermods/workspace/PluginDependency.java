@@ -14,6 +14,7 @@ enum PluginDependency implements Dependency {
 		COMMONS_IO("commons-io", "commons-io", "@commonsIOVersion@"),
 		COMMONS_LANG("org.apache.commons", "commons-lang3", "@commonsLangVersion@"),
 		COMMONS_TEXT("org.apache.commons", "commons-text", "@commonsTextVersion@"),
+		GSON("com.google.code.gson", "gson", "@gsonVersion@"),
 		LOOM("net.fabricmc", "fabric-loom", "@loomVersion@"),
 		VINEFLOWER("org.vineflower", "vineflower", "@vineFlowerVersion@");
 	

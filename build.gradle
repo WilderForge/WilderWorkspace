@@ -26,6 +26,7 @@ dependencies {
     implementation group: 'commons-io', name: 'commons-io', version: commonsIOVersion
     implementation group: 'net.fabricmc', name: 'fabric-loom', version: loomVersion
     implementation group: 'org.vineflower', name: 'vineflower', version: vineFlowerVersion
+    implementation group: 'com.google.code.gson', name: 'gson', version: gsonVersion
 }
 
 import org.apache.tools.ant.filters.ReplaceTokens

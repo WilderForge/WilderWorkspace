@@ -385,17 +385,15 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		});
 		
 		project.getTasks().register("copyProjectDependencies", Copy.class, task -> {
-			task.doFirst(t -> {
-			    // Get the files from the exclusion configuration
-			    Set<File> exclusionFiles = excludedFabricDeps.getResolvedConfiguration().getFiles();
+		    // Get the files from the exclusion configuration
+		    Set<File> exclusionFiles = excludedFabricDeps.getResolvedConfiguration().getFiles();
 
-			    task.from(resolvableImplementation, copySpec -> {
-			        // Exclude files that are in the exclusion configuration
-			        copySpec.exclude(fileTreeElement -> exclusionFiles.contains(fileTreeElement.getFile()));
-			    });
-			    
-			    task.into(Path.of(extension.getGameDestDir()).resolve("fabric"));
-			});
+		    task.from(resolvableImplementation, copySpec -> {
+		        // Exclude files that are in the exclusion configuration
+		        copySpec.exclude(fileTreeElement -> exclusionFiles.contains(fileTreeElement.getFile()));
+		    });
+		    
+		    task.into(Path.of(extension.getGameDestDir()).resolve("fabric"));
 		});
 
 	}

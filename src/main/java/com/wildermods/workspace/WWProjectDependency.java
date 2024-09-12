@@ -36,7 +36,7 @@ public enum WWProjectDependency implements Dependency {
 		fabricLoader(fabricImpl, "net.fabricmc", "fabric-loader", "@fabricLoaderVersion@"),
 		fabricLoaderDepsJson(retrieveJson, "net.fabricmc", "fabric-loader", "@fabricLoaderVersion@"),
 		gameProvider(fabricImpl, "com.wildermods", "provider", "@providerVersion@", "https://wildermods.com/WildermythGameProvider.git"),
-		
+		vineflower(fabricDep, "org.vineflower", "vineflower", "@vineFlowerVersion@")
 	;
 
 	private final ProjectDependencyType type;

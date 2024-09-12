@@ -41,7 +41,6 @@ import java.util.Set;
 
 import javax.net.ssl.HttpsURLConnection;
 
-import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 
 /**

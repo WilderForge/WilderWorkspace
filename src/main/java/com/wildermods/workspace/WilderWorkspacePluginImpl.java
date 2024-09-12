@@ -41,6 +41,7 @@ import java.util.Set;
 
 import javax.net.ssl.HttpsURLConnection;
 
+import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 
 /**
@@ -375,7 +376,6 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		
 		project.getTasks().register("copyFabricDependencies", Copy.class, task -> {
 			task.from(fabricDep);
-			task.from(retrieveJson);
 			task.into(Path.of(extension.getGameDestDir()).resolve("fabric"));
 		});
 		
@@ -384,17 +384,19 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			task.into(extension.getGameDestDir());
 		});
 		
-		project.getTasks().register("copyProjectDependencies", Copy.class, task -> {
-		    // Get the files from the exclusion configuration
-		    Set<File> exclusionFiles = excludedFabricDeps.getResolvedConfiguration().getFiles();
+	    project.getTasks().register("copyProjectDependencies", Copy.class, task -> {
+	        // Lazy evaluation of the resolvableImplementation configuration
+	        task.from(project.provider(() -> project.files(resolvableImplementation).getAsFileTree().matching(copySpec -> {
+	            // Lazy evaluation of excludedFabricDeps configuration
+	            Set<File> exclusionFiles = project.provider(() -> project.files(excludedFabricDeps).getFiles()).get();
 
-		    task.from(resolvableImplementation, copySpec -> {
-		        // Exclude files that are in the exclusion configuration
-		        copySpec.exclude(fileTreeElement -> exclusionFiles.contains(fileTreeElement.getFile()));
-		    });
-		    
-		    task.into(Path.of(extension.getGameDestDir()).resolve("fabric"));
-		});
+	            // Exclude the files found in the exclusion configuration
+	            copySpec.exclude(fileTreeElement -> exclusionFiles.contains(fileTreeElement.getFile()));
+	        })));
+
+	        // Set the destination directory
+	        task.into(Path.of(extension.getGameDestDir()).resolve("fabric"));
+	    });
 
 	}
 	

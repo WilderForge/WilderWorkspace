@@ -54,6 +54,9 @@ task processSource(type: Sync) {
     inputs.property 'vineFlowerVersion', vineFlowerVersion
     inputs.property 'loomVersion', loomVersion
     
+    //transitive dependencies
+    inputs.property 'log4jVersion', log4jVersion
+    
     filter(ReplaceTokens, tokens: [
         //The version of the WilderWorkspace gradle plugin
         workspaceVersion: workspaceVersion, 
@@ -74,6 +77,9 @@ task processSource(type: Sync) {
         commonsTextVersion: commonsTextVersion,
         vineFlowerVersion: vineFlowerVersion,
         loomVersion: loomVersion,
+        
+        //transitive dependencies
+        log4jVersion: log4jVersion
     ])
 }
 

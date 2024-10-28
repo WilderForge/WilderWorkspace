@@ -66,6 +66,7 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 	public static final String VERSION = "@workspaceVersion@";
 	
 	private Configuration implementation;
+	private Configuration compileOnly;
 	private Configuration fabricDep;
 	private Configuration fabricImpl;
 	private Configuration retrieveJson;
@@ -205,6 +206,7 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 	private void setupConfigurations(WWProjectContext context) {
 		Project project = context.getProject();
 		implementation = project.getConfigurations().getByName(ProjectDependencyType.implementation.name());
+		compileOnly = project.getConfigurations().getByName(ProjectDependencyType.compileOnly.name());
 		fabricDep = project.getConfigurations().create(ProjectDependencyType.fabricDep.name());
 		fabricImpl = project.getConfigurations().create(ProjectDependencyType.fabricImpl.name());
 		retrieveJson = project.getConfigurations().create(ProjectDependencyType.retrieveJson.name(), configuration -> {
@@ -229,13 +231,12 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		for(WWProjectDependency dependency : WWProjectDependency.values()) {
 			project.getLogger().log(LogLevel.INFO, "ADDING " + dependency.getModule() + ":" + dependency.getVersion() + " TO " + dependency.getType() + " CONFIGURATION");
 			dependencies.add(dependency.getType().name(), dependency.toString());
-			project.getLogger().log(LogLevel.INFO, "ADDING " + dependency.getModule() + ":" + dependency.getVersion() + " TO " + implementation + " CONFIGURATION");
-			dependencies.add(implementation.getName(), dependency.toString());
+			project.getLogger().log(LogLevel.INFO, "ADDING " + dependency.getModule() + ":" + dependency.getVersion() + " TO " + compileOnly + " CONFIGURATION");
+			dependencies.add(compileOnly.getName(), dependency.toString());
 		}
 		
 		project.getLogger().log(LogLevel.INFO, "ADDING JSON DEPENDENCIES " + VERSION);
 		addJsonDependencies(context);
-		
 	}
 	
 	private void addJsonDependencies(WWProjectContext context) {
@@ -394,9 +395,9 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			})));
 
 			// Set the destination directory
-			task.into(Path.of(extension.getGameDestDir()).resolve("fabric"));
+			task.into(Path.of(extension.getGameDestDir()).resolve("modDeps"));
 		});
-
+		
 	}
 	
 	/**

@@ -28,6 +28,7 @@ import com.google.gson.JsonParser;
 import com.wildermods.workspace.tasks.ClearLocalRuntimeTask;
 import com.wildermods.workspace.tasks.CopyLocalDependenciesToWorkspaceTask;
 import com.wildermods.workspace.tasks.DecompileJarsTask;
+import com.wildermods.workspace.tasks.eclipse.GenerateRunConfigurationTask;
 import com.wildermods.workspace.util.ExceptionUtil;
 
 import java.io.File;
@@ -398,6 +399,10 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			task.into(Path.of(extension.getGameDestDir()).resolve("modDeps"));
 		});
 		
+		project.getTasks().register("genEclipseRuns", GenerateRunConfigurationTask.class, task -> {
+			
+		});
+		
 	}
 	
 	/**
@@ -450,7 +455,7 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			if (project.getPlugins().hasPlugin("eclipse")) {
 				EclipseModel eclipseModel = proj.getExtensions().getByType(EclipseModel.class);
 				EclipseClasspath classpath = eclipseModel.getClasspath();
-
+				
 				classpath.file(xmlFileContent -> {
 					xmlFileContent.getWhenMerged().add((classPathMerged) -> {
 						Classpath c = (Classpath) classPathMerged;
@@ -470,8 +475,10 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 					});
 				});
 
+				project.getTasks().getByName("eclipse").finalizedBy(project.getTasks().getByName("genEclipseRuns"));
+				
 			} else {
-				project.getLogger().warn("Eclipse plugin is not applied. The eclipse source attachment will not be configured.");
+				project.getLogger().warn("Eclipse plugin is not applied. The eclipse source attachment will not be configured, and the eclipse run configurations will not be generated.");
 			}
 		});
 	}

@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 import org.gradle.api.DefaultTask;
+import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
 
@@ -34,13 +35,19 @@ public class GenerateRunConfigurationTask extends DefaultTask {
             </launchConfiguration>
             """;
     
+    public @Input boolean overwrite = false;
+    
+    public boolean getOverwrite() {
+    	return overwrite;
+    }
+    
 	@OutputFile
 	public Path getLaunchFile() {
 		return getProject().getProjectDir().toPath().resolve(".eclipse/configurations/runClient.launch");
 	}
 
 	@TaskAction
-    private void generateLaunchConfig(boolean overwrite) {
+    private void generateLaunchConfig() {
         Path launchFile = getLaunchFile();
 
         String projectName = getProject().getName();

@@ -5,11 +5,13 @@ plugins {
 }
 
 repositories {
-    maven {
-        url "https://maven.fabricmc.net"
-    }
     mavenCentral()
-    mavenLocal()
+    maven {
+        url "https://maven.fabricmc.net/"
+    }
+    maven {
+    	url "https://maven.wildermods.com/"
+    }
 }
 
 version = workspaceVersion
@@ -88,17 +90,58 @@ compileJava {
     dependsOn processSource
 }
 
-def pom2;
+ext.mavenLocalUrl = repositories.mavenLocal().url.toString()
+
+task sourceJar(type: Jar) {
+    from sourceSets.main.allSource
+    archiveClassifier.set('sources')
+}
+
+tasks.register('checkArtifactExists') {
+    doLast {
+        def repoUrl = project.hasProperty('mavenRepoUrl') ? project.mavenRepoUrl : mavenLocalUrl
+        def artifactPath = "${repoUrl}/${project.group.replace('.', '/')}/${project.archivesBaseName}/${project.version}/${project.archivesBaseName}-${project.version}.jar"
+        logger.lifecycle("Checking if artifact exists at: $artifactPath")
+        
+        if (artifactPath.startsWith('file:/')) {
+            // Handle file URLs
+            def file = new File(new URI(artifactPath))
+            if (file.exists()) {
+                throw new IllegalStateException("Artifact '${project.group}:${project.archivesBaseName}:${project.version}' already exists. Publishing aborted.")
+            }
+        } else {
+            // Handle HTTP URLs
+            def url = new URL(artifactPath)
+            def connection = url.openConnection()
+            connection.setRequestMethod('HEAD')
+            if (connection.responseCode == 200) {
+				throw new IllegalStateException("Artifact '${project.group}:${project.archivesBaseName}:${project.version}' already exists. Publishing aborted.")
+            }
+        }
+        logger.lifecycle("Artifact does not exist, proceeding with publish.")
+    }
+}
+
+tasks.named('publish') {
+    dependsOn 'checkArtifactExists'
+}
 
 publishing {
     publications {
-        maven(MavenPublication) {
+        mavenJava(MavenPublication) {
             from components.java
-            groupId = "com.wildermods"
-            artifactId = "wilderworkspace"
-            version = workspaceVersion
-            pom2 = pom;
+            groupId = project.group
+            artifactId = project.archivesBaseName
+            version = project.version
 
+            // Attach sources JAR to the publication
+            artifact sourceJar
         }
-	}
+    }
+
+    repositories {
+        maven {
+            url = uri(project.hasProperty('mavenRepoUrl') ? project.mavenRepoUrl : mavenLocalUrl) // Default to mavenLocal if no custom URL is provided
+        }
+    }
 }

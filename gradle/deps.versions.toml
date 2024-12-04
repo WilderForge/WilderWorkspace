@@ -12,7 +12,7 @@ fabric_loader_version = "0.16.8"
 [libraries]
 commons_lang = { module = "org.apache.commons:commons-lang3", version.ref = "commons_lang_version"}
 commons_text = { module = "org.apache.commons:commons-text", version.ref = "commons_text_version"}
-commons_io = { module = "org.apache.commons:commons-io", version.ref = "commons_io_version"}
+commons_io = { module = "commons-io:commons-io", version.ref = "commons_io_version"}
 fabric-loom = { module = "net.fabricmc:fabric-loom", version.ref = "fabric_loom_version"}
 vineflower = { module = "org.vineflower:vineflower", version.ref = "vineflower_version"}
 gson = { module = "com.google.code.gson:gson", version = "2.10.1"}

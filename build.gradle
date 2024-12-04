@@ -21,14 +21,15 @@ archivesBaseName = "workspace"
 sourceCompatibility = '17'
 targetCompatibility = '17'
 
+//dependencies are defined in [project root]/gradle/deps.versions.toml
 dependencies {
     gradleApi()
     implementation libs.commons.lang
-    implementation group: 'org.apache.commons', name: 'commons-text', version: commonsTextVersion
-    implementation group: 'commons-io', name: 'commons-io', version: commonsIOVersion
-    implementation group: 'net.fabricmc', name: 'fabric-loom', version: loomVersion
-    implementation group: 'org.vineflower', name: 'vineflower', version: vineFlowerVersion
-    implementation group: 'com.google.code.gson', name: 'gson', version: gsonVersion
+    implementation libs.commons.text
+    implementation libs.commons.io
+    implementation libs.fabric.loom
+    implementation libs.vineflower
+    implementation libs.gson
 }
 
 import org.apache.tools.ant.filters.ReplaceTokens
@@ -69,18 +70,18 @@ task processSource(type: Sync) {
     //The version of the WilderWorkspace gradle plugin
     inputs.property 'workspaceVersion', workspaceVersion
     
-    inputs.property 'providerVersion', libs.versions.provider.version
-    inputs.property 'fabricLoaderVersion', libs.versions.fabric.loader.version
+    def providerVersion = libs.versions.provider.version.get()
+    def fabricLoaderVersion = libs.versions.fabric.loader.version.get()
     
     //dependencies for building and running WilderWorkspace gradle plugin itself
-    inputs.property 'commonsIOVersion', libs.versions.commons.io.version
-    inputs.property 'commonsLangVersion', libs.versions.commons.Lang.version
-    inputs.property 'commonsTextVersion', libs.versions.commons.Text.version
-    inputs.property 'vineFlowerVersion', libs.versions.vineflower.version
-    inputs.property 'loomVersion', libs.versions.fabric.Loom.version
+    def commonsIOVersion = libs.versions.commons.io.version.get()
+    def commonsLangVersion = libs.versions.commons.Lang.version.get()
+    def commonsTextVersion = libs.versions.commons.Text.version.get()
+    def vineFlowerVersion = libs.versions.vineflower.version.get()
+    def loomVersion = libs.versions.fabric.Loom.version.get()
     
     //transitive dependencies
-    inputs.property 'log4jVersion', libs.versions.log4j.version
+    def log4jVersion = libs.versions.log4j.version.get()
     
     filter(ReplaceTokens, tokens: [
         //The version of the WilderWorkspace gradle plugin

@@ -128,7 +128,7 @@ publishing {
     publications {
         mavenJava(MavenPublication) {
             from components.java
-            groupId = project.group
+            groupId = project.group + ".workspace"
             artifactId = 'com.wildermods.workspace.gradle.plugin'  // Set the expected plugin artifact ID
             version = project.version
 

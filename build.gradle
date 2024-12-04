@@ -124,6 +124,14 @@ tasks.named('publish') {
     dependsOn 'checkArtifactExists'
 }
 
+
+tasks.withType(PublishToMavenRepository).configureEach {
+    if (it.name.equals("publishPluginMavenPublicationToMavenRepository")) {
+        logger.lifecycle("Disabling task: ${it.name}")
+        it.enabled = false
+    }
+}
+
 publishing {
     publications {
         mavenJava(MavenPublication) {

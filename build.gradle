@@ -10,19 +10,19 @@ repositories {
         url "https://maven.fabricmc.net/"
     }
     maven {
-    	url "https://maven.wildermods.com/"
+        url "https://maven.wildermods.com/"
     }
 }
 
 version = workspaceVersion
 group = "com.wildermods"
-archivesBaseName = "wilderworkspace"
+archivesBaseName = "workspace"
 
 sourceCompatibility = '17'
 targetCompatibility = '17'
 
 dependencies {
-	gradleApi()
+    gradleApi()
     implementation group: 'org.apache.commons', name: 'commons-lang3', version: commonsLangVersion
     implementation group: 'org.apache.commons', name: 'commons-text', version: commonsTextVersion
     implementation group: 'commons-io', name: 'commons-io', version: commonsIOVersion
@@ -100,22 +100,20 @@ task sourceJar(type: Jar) {
 tasks.register('checkArtifactExists') {
     doLast {
         def repoUrl = project.hasProperty('mavenRepoUrl') ? project.mavenRepoUrl : mavenLocalUrl
-        def artifactPath = "${repoUrl}/${project.group.replace('.', '/')}/${project.archivesBaseName}/${project.version}/${project.archivesBaseName}-${project.version}.jar"
+        def artifactPath = "${repoUrl}/${project.group.replace('.', '/')}/com/wildermods/workspace/gradle/plugin/${project.version}/workspace-${project.version}.jar"
         logger.lifecycle("Checking if artifact exists at: $artifactPath")
         
         if (artifactPath.startsWith('file:/')) {
-            // Handle file URLs
             def file = new File(new URI(artifactPath))
             if (file.exists()) {
                 throw new IllegalStateException("Artifact '${project.group}:${project.archivesBaseName}:${project.version}' already exists. Publishing aborted.")
             }
         } else {
-            // Handle HTTP URLs
             def url = new URL(artifactPath)
             def connection = url.openConnection()
             connection.setRequestMethod('HEAD')
             if (connection.responseCode == 200) {
-				throw new IllegalStateException("Artifact '${project.group}:${project.archivesBaseName}:${project.version}' already exists. Publishing aborted.")
+                throw new IllegalStateException("Artifact '${project.group}:${project.archivesBaseName}:${project.version}' already exists. Publishing aborted.")
             }
         }
         logger.lifecycle("Artifact does not exist, proceeding with publish.")
@@ -131,7 +129,7 @@ publishing {
         mavenJava(MavenPublication) {
             from components.java
             groupId = project.group
-            artifactId = project.archivesBaseName
+            artifactId = 'com.wildermods.workspace.gradle.plugin'  // Set the expected plugin artifact ID
             version = project.version
 
             // Attach sources JAR to the publication

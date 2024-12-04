@@ -22,6 +22,7 @@ import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
 
 import com.wildermods.workspace.WilderWorkspaceExtension;
+import com.wildermods.workspace.WilderWorkspacePluginImpl;
 import com.wildermods.workspace.util.OS;
 import com.wildermods.workspace.util.Platform;
 
@@ -100,7 +101,7 @@ public class CopyLocalDependenciesToWorkspaceTask extends DefaultTask {
 			});
 			
 			Path patchFile = destDir.resolve("patchline.txt");
-			PathUtils.writeString(patchFile, patchline + " - [WilderWorkspace {$workspaceVersion}]", Charset.defaultCharset(), StandardOpenOption.TRUNCATE_EXISTING);
+			PathUtils.writeString(patchFile, patchline + " - [WilderWorkspace " + WilderWorkspacePluginImpl.VERSION + "]", Charset.defaultCharset(), StandardOpenOption.TRUNCATE_EXISTING);
 			
 		}
 		catch(Exception e) {

@@ -194,6 +194,9 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		repositories.add(repositories.maven((repo) -> {
 			repo.setUrl("https://maven.fabricmc.net/");
 		}));
+		repositories.add(repositories.maven((repo) -> {
+			repo.setUrl("https://maven.wildermods.com/");
+		}));
 	}
 	
 	/**

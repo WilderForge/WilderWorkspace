@@ -79,6 +79,7 @@ task processSource(type: Sync) {
     def commonsTextVersion = libs.versions.commons.Text.version.get()
     def vineFlowerVersion = libs.versions.vineflower.version.get()
     def loomVersion = libs.versions.fabric.Loom.version.get()
+    def gsonVersion = libs.versions.gson.version.get()
     
     //transitive dependencies
     def log4jVersion = libs.versions.log4j.version.get()
@@ -90,6 +91,7 @@ task processSource(type: Sync) {
         //dependencies that projects using WilderWorkspace will need in order to mod Wildermyth
         providerVersion: providerVersion,
         fabricLoaderVersion: fabricLoaderVersion,
+        gsonVersion: gsonVersion,
         
         //dependencies for building and running WilderWorkspace gradle plugin itself
         commonsIOVersion: commonsIOVersion,

@@ -6,7 +6,7 @@ fabric_loom_version = "1.9.2"
 log4j_version = "2.24.2"
 provider_version = "1.5.0.3"
 vineflower_version = "1.10.1"
-
+gson_version = "2.11.0"
 fabric_loader_version = "0.16.9"
 
 [libraries]
@@ -15,7 +15,7 @@ commons_text = { module = "org.apache.commons:commons-text", version.ref = "comm
 commons_io = { module = "commons-io:commons-io", version.ref = "commons_io_version"}
 fabric-loom = { module = "net.fabricmc:fabric-loom", version.ref = "fabric_loom_version"}
 vineflower = { module = "org.vineflower:vineflower", version.ref = "vineflower_version"}
-gson = { module = "com.google.code.gson:gson", version = "2.11.0"}
+gson = { module = "com.google.code.gson:gson", version.ref = "gson_version"}
 
 fabric-loader = { module = "net.fabricmc:fabric-loader", version.ref = "fabric_loader_version" }
 provider = { module = "com.wildermods:provider", version.ref = "provider_version" }

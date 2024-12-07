@@ -35,7 +35,7 @@ public enum WWProjectDependency implements Dependency {
 	
 		fabricLoader(fabricImpl, "net.fabricmc", "fabric-loader", "@fabricLoaderVersion@"),
 		fabricLoaderDepsJson(retrieveJson, "net.fabricmc", "fabric-loader", "@fabricLoaderVersion@"),
-		gameProvider(fabricImpl, "com.wildermods", "provider", "@providerVersion@", "https://wildermods.com/WildermythGameProvider.git"),
+		gameProvider(fabricImpl, "com.wildermods", "provider", "@providerVersion@"),
 		log4jCore(fabricDep, "org.apache.logging.log4j", "log4j-core", "@log4jVersion@"),
 		log4jAPI(fabricDep, "org.apache.logging.log4j", "log4j-api", "@log4jVersion@"),
 		log4jSLF4J(fabricDep, "org.apache.logging.log4j", "log4j-slf4j2-impl", "@log4jVersion@"),

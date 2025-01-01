@@ -122,11 +122,13 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			setupPostEvaluations(context);
 		}
 		catch(Throwable t) {
-			Throwable cause = ExceptionUtil.getInitialCause(t);
-			if(cause instanceof NoClassDefFoundError) {
-				throw new LinkageError("Required class not in classpath.", t);
-			}
-			throw new LinkageError("Failed to apply WilderWorkspace " + VERSION, t);
+			project.getLogger().log(LogLevel.ERROR, t.getMessage(), t);
+			//Throwable cause = ExceptionUtil.getInitialCause(t);
+			//if(cause instanceof NoClassDefFoundError) {
+			//	throw new LinkageError("Required class not in classpath.", t);
+			//}
+			//throw new LinkageError("Failed to apply WilderWorkspace " + VERSION, t);
+			throw t;
 		}
 	}
 	

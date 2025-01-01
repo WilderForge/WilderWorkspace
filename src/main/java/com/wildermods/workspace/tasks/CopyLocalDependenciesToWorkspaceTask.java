@@ -23,6 +23,7 @@ import org.gradle.api.tasks.TaskAction;
 
 import com.wildermods.workspace.WilderWorkspaceExtension;
 import com.wildermods.workspace.WilderWorkspacePluginImpl;
+import com.wildermods.workspace.util.FileHelper;
 import com.wildermods.workspace.util.OS;
 import com.wildermods.workspace.util.Platform;
 
@@ -80,7 +81,13 @@ public class CopyLocalDependenciesToWorkspaceTask extends DefaultTask {
 			Files.walkFileTree(installDir, new SimpleFileVisitor<Path>() {
 				@Override
 				public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-					Path target = destDir.resolve(installDir.relativize(file));
+					Path target;
+					if(FileHelper.shouldBeRemapped(file)) {
+						target = destDir.resolve("unmapped").resolve(installDir.relativize(file));
+					}
+					else {
+						target = destDir.resolve(installDir.relativize(file));
+					}
 					if(!overwrite && Files.exists(target)) {
 						LOGGER.info("Not copying " + target + " - File at target location already exists.");
 						return FileVisitResult.CONTINUE;
@@ -108,25 +115,6 @@ public class CopyLocalDependenciesToWorkspaceTask extends DefaultTask {
 			RuntimeException e2 = new RuntimeException("Failed to copy dependencies.", e);
 			LOGGER.error("Failed to copy dependencies.", e2);
 			throw e2;
-		}
-	}
-	
-	private static void copyDirs(Path source, Path dest, String... sub) throws IOException {
-		for(String s : sub) {
-			Path from = source.resolve(s);
-			Path to = dest;
-			if(Files.exists(from)) {
-				if(Files.isDirectory(from)) {
-					to = dest.resolve(s);
-					PathUtils.copyDirectory(from, to);
-				}
-				else if(Files.isRegularFile(from)) {
-					PathUtils.copyFileToDirectory(from, to);
-				}
-			}
-			else {
-				throw new FileNotFoundException(from.toAbsolutePath().normalize().toString());
-			}
 		}
 	}
 	

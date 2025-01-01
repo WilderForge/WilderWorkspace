@@ -119,6 +119,12 @@ task sourceJar(type: Jar) {
 
 tasks.register('checkArtifactExists') {
     doLast {
+		// Skip this task if --force is present
+		if (project.hasProperty('force')) {
+			logger.lifecycle("Skipping artifact existence check due to --force flag.")
+			return
+		}
+		
         def repoUrl = project.hasProperty('mavenRepoUrl') ? project.mavenRepoUrl : mavenLocalUrl
         def artifactName = "com.wildermods.workspace.gradle.plugin"
         def artifactPath = "${repoUrl}/${project.group.replace('.', '/')}/${project.archivesBaseName}/${artifactName}/${project.version}/${artifactName}-${project.version}.jar"

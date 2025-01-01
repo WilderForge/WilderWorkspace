@@ -21,13 +21,6 @@ import com.wildermods.workspace.decomp.WilderWorkspaceDecompiler;
 import net.fabricmc.loom.decompilers.ClassLineNumbers;
 import net.fabricmc.loom.decompilers.LineNumberRemapper;
 
-/**
- * Task to decompile JAR files and remap their line numbers.
- * <p>
- * This task identifies specific JAR files to decompile, adds other JAR files as libraries, and processes 
- * line number mappings to produce decompiled sources with accurate line numbers.
- * </p>
- */
 public class DecompileJarsTask extends DefaultTask {
 
 	@Input
@@ -43,7 +36,7 @@ public class DecompileJarsTask extends DefaultTask {
 		DecompilerBuilder b = new DecompilerBuilder(this);
 		b.setDecompDest(Path.of(decompDir));
 		HashMap<String, Path> compiledJars = new HashMap<String, Path>();
-		HashMap<String, Path> lineMappedJarDests = new HashMap<String, Path>();
+		HashMap<String, Path> decompiledJarDests = new HashMap<String, Path>();
 		
 		/*
 		 * Add jars to decompile
@@ -68,7 +61,7 @@ public class DecompileJarsTask extends DefaultTask {
 					case "wildermyth.jar":
 						System.out.println("Adding " + file.toAbsolutePath().normalize().toString() + " as input for the decompiler.");
 						compiledJars.put(file.getFileName().toString(), file);
-						lineMappedJarDests.put(file.getFileName().toString(), compiledDir.resolve(GameJars.fromPath(file).getPath()));
+						decompiledJarDests.put(file.getFileName().toString(), compiledDir.resolve("remapped").resolve(GameJars.fromPath(file).getPath()));
 						b.addJarsToDecomp(file.normalize().toAbsolutePath());
 						return FileVisitResult.CONTINUE;
 				}
@@ -111,9 +104,9 @@ public class DecompileJarsTask extends DefaultTask {
 		WilderWorkspaceDecompiler decompiler = b.build();
 		decompiler.decompile();
 		
-		Path linemapDir = Path.of(decompDir).resolve("linemaps");
+		Path linemapDir = Path.of(decompDir).resolve("decomp").resolve("linemaps");
 		if(Files.exists(linemapDir)) {
-			Files.walkFileTree(Path.of(decompDir).resolve("linemaps"), new SimpleFileVisitor<Path>() {
+			Files.walkFileTree(linemapDir, new SimpleFileVisitor<Path>() {
 				@Override
 				public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
 					if(!dir.equals(linemapDir)) { //there are no subdirectories we want to visit
@@ -130,7 +123,7 @@ public class DecompileJarsTask extends DefaultTask {
 					if(Files.exists(unmappedJar)) {
 						System.out.println("Found jar to remap: " + unmappedJar.getFileName());
 						try {
-							remap(linemap, unmappedJar, lineMappedJarDests.get(jarName));
+							remap(linemap, unmappedJar, decompiledJarDests.get(jarName));
 						} catch (Throwable e) {
 							throw new IOException(e);
 						}
@@ -162,7 +155,7 @@ public class DecompileJarsTask extends DefaultTask {
 		ClassLineNumbers lineNumbers = ClassLineNumbers.readMappings(linemap);
 		LineNumberRemapper remapper = new LineNumberRemapper(lineNumbers);
 		if(Files.notExists(remappedJarDest)) {
-			//Files.createFile(remappedJarDest);
+			Files.createDirectories(remappedJarDest.getParent());
 		}
 		remapper.process(jarToRemap, remappedJarDest);
 	}

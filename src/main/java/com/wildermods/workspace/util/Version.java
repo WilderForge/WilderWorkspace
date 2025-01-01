@@ -1,5 +1,6 @@
 package com.wildermods.workspace.util;
 
+@SuppressWarnings("rawtypes")
 public class Version implements Comparable {
 
 	private static final String SPLITTER = "\\.";

@@ -119,21 +119,28 @@ task sourceJar(type: Jar) {
 
 tasks.register('checkArtifactExists') {
     doLast {
+		// Skip this task if --force is present
+		if (project.hasProperty('force')) {
+			logger.lifecycle("Skipping artifact existence check due to --force flag.")
+			return
+		}
+		
         def repoUrl = project.hasProperty('mavenRepoUrl') ? project.mavenRepoUrl : mavenLocalUrl
-        def artifactPath = "${repoUrl}/${project.group.replace('.', '/')}/com/wildermods/workspace/gradle/plugin/${project.version}/workspace-${project.version}.jar"
+        def artifactName = "com.wildermods.workspace.gradle.plugin"
+        def artifactPath = "${repoUrl}/${project.group.replace('.', '/')}/${project.archivesBaseName}/${artifactName}/${project.version}/${artifactName}-${project.version}.jar"
         logger.lifecycle("Checking if artifact exists at: $artifactPath")
         
         if (artifactPath.startsWith('file:/')) {
             def file = new File(new URI(artifactPath))
             if (file.exists()) {
-                throw new IllegalStateException("Artifact '${project.group}:${project.archivesBaseName}:${project.version}' already exists. Publishing aborted.")
+                throw new IllegalStateException("Artifact '${artifactPath}' already exists. Publishing aborted.")
             }
         } else {
             def url = new URL(artifactPath)
             def connection = url.openConnection()
             connection.setRequestMethod('HEAD')
             if (connection.responseCode == 200) {
-                throw new IllegalStateException("Artifact '${project.group}:${project.archivesBaseName}:${project.version}' already exists. Publishing aborted.")
+                throw new IllegalStateException("Artifact '${artifactPath}' already exists. Publishing aborted.")
             }
         }
         logger.lifecycle("Artifact does not exist, proceeding with publish.")

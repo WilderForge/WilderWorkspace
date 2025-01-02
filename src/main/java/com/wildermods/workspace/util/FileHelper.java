@@ -1,6 +1,8 @@
 package com.wildermods.workspace.util;
 
 import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
@@ -34,6 +36,20 @@ public class FileHelper {
 			throw new IllegalArgumentException("Child path not a subpath of parent!");
 		}
 		return parent.relativize(child);
+	}
+	
+	public static boolean shouldBeRemapped(Path file) {
+		if(Files.isRegularFile(file, LinkOption.NOFOLLOW_LINKS)) {
+			switch(file.getFileName().toString()) {
+				case "devvotes-client.jar":
+				case "gameEngine-1.0.jar":
+				case "server-1.0.jar":
+				case "scratchpad.jar":
+				case "wildermyth.jar":
+					return true;
+			}
+		}
+		return false;
 	}
 	
 }

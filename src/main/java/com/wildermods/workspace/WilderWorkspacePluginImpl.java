@@ -33,6 +33,7 @@ import com.wildermods.workspace.util.ExceptionUtil;
 
 import java.io.File;
 import java.io.InputStreamReader;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.HashSet;
@@ -122,6 +123,7 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			setupPostEvaluations(context);
 		}
 		catch(Throwable t) {
+			project.getLogger().log(LogLevel.ERROR, t.getMessage(), t);
 			Throwable cause = ExceptionUtil.getInitialCause(t);
 			if(cause instanceof NoClassDefFoundError) {
 				throw new LinkageError("Required class not in classpath.", t);
@@ -157,6 +159,7 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 	 *
 	 * @param project the Gradle project
 	 */
+	@SuppressWarnings("resource")
 	private void addPluginDependencies(Project project) {
 		ScriptHandler buildscript = project.getBuildscript();
 		{
@@ -175,16 +178,14 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		
 		buildscript.getConfigurations().forEach((config -> {
 			Set<File> dependencies = config.resolve();
-			 
-			try(VisitableURLClassLoader classLoader = (VisitableURLClassLoader) WilderWorkspacePlugin.class.getClassLoader()) {
-				for(File dependency : dependencies) {
+			VisitableURLClassLoader classLoader = (VisitableURLClassLoader) WilderWorkspacePlugin.class.getClassLoader();
+			for(File dependency : dependencies) {
+				try {
 					classLoader.addURL(dependency.toURI().toURL());
+				} catch (MalformedURLException e) {
+					throw new LinkageError("Could not resolve dependency", e);
 				}
 			}
-			catch(Throwable t) {
-					throw new LinkageError("Could not resolve dependency", t);
-			}
-
 		}));
 	}
 	
@@ -328,8 +329,8 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			task.setPlatform(extension.getPlatform());
 			task.setPatchline(extension.getPatchline());
 			task.setDestDir(extension.getGameDestDir());
-			task.finalizedBy(project.getTasks().getByName("copyFabricDependencies"));
-			task.finalizedBy(project.getTasks().getByName("copyFabricImplementors"));
+			//task.finalizedBy(project.getTasks().getByName("copyFabricDependencies"));
+			//task.finalizedBy(project.getTasks().getByName("copyFabricImplementors"));
 			task.finalizedBy(project.getTasks().getByName("copyProjectDependencies"));
 		});
 		

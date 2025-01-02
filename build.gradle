@@ -126,8 +126,9 @@ tasks.register('checkArtifactExists') {
 		}
 		
         def repoUrl = project.hasProperty('mavenRepoUrl') ? project.mavenRepoUrl : mavenLocalUrl
-        def artifactName = "com.wildermods.workspace.gradle.plugin"
-        def artifactPath = "${repoUrl}/${project.group.replace('.', '/')}/${project.archivesBaseName}/${artifactName}/${project.version}/${artifactName}-${project.version}.jar"
+        def projectGroup = "${project.group}.${project.archivesBaseName}"
+        def gradleGroup = "${projectGroup}.gradle.plugin"
+        def artifactPath = "${repoUrl}/${projectGroup.replace('.', '/')}/${gradleGroup}/${project.version}/${gradleGroup}-${project.version}.jar"
         logger.lifecycle("Checking if artifact exists at: $artifactPath")
         
         if (artifactPath.startsWith('file:/')) {

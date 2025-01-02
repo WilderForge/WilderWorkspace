@@ -17,6 +17,7 @@ import org.gradle.api.tasks.TaskAction;
 import com.wildermods.workspace.GameJars;
 import com.wildermods.workspace.decomp.DecompilerBuilder;
 import com.wildermods.workspace.decomp.WilderWorkspaceDecompiler;
+import com.wildermods.workspace.util.FileHelper;
 
 import net.fabricmc.loom.decompilers.ClassLineNumbers;
 import net.fabricmc.loom.decompilers.LineNumberRemapper;
@@ -45,25 +46,24 @@ public class DecompileJarsTask extends DefaultTask {
 
 			@Override
 			public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-				if(attrs.isSymbolicLink() || (!dir.getFileName().toString().equals("lib") && !dir.equals(compiledDir))) { //the only files we want to decompile are located in the '.' and './lib'
-					return FileVisitResult.SKIP_SUBTREE;
+				//the only files we want to decompile are located in the '.', './lib', and "./unmapped" directories
+				if(attrs.isSymbolicLink() || (
+					!dir.getFileName().toString().equals("lib") && 
+					!dir.equals(compiledDir) && 
+					!dir.getFileName().toString().equals("unmapped"))) { 
+						return FileVisitResult.SKIP_SUBTREE;
 				}
 				return FileVisitResult.CONTINUE;
 			}
 
 			@Override
 			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-				switch(file.getFileName().toString()) { //We only want to decompile these 5 files.
-					case "devvotes-client.jar":
-					case "gameEngine-1.0.jar":
-					case "server-1.0.jar":
-					case "scratchpad.jar":
-					case "wildermyth.jar":
-						System.out.println("Adding " + file.toAbsolutePath().normalize().toString() + " as input for the decompiler.");
-						compiledJars.put(file.getFileName().toString(), file);
-						decompiledJarDests.put(file.getFileName().toString(), compiledDir.resolve("remapped").resolve(GameJars.fromPath(file).getPath()));
-						b.addJarsToDecomp(file.normalize().toAbsolutePath());
-						return FileVisitResult.CONTINUE;
+				if(FileHelper.shouldBeRemapped(file)) {
+					System.out.println("Adding " + file.toAbsolutePath().normalize().toString() + " as input for the decompiler.");
+					compiledJars.put(file.getFileName().toString(), file);
+					decompiledJarDests.put(file.getFileName().toString(), compiledDir.resolve(GameJars.fromPath(file).getPath()));
+					b.addJarsToDecomp(file.normalize().toAbsolutePath());
+					return FileVisitResult.CONTINUE;
 				}
 				return FileVisitResult.CONTINUE;
 			}
@@ -77,22 +77,21 @@ public class DecompileJarsTask extends DefaultTask {
 
 			@Override
 			public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-				if(attrs.isSymbolicLink() || (!dir.getFileName().toString().equals("lib") && !dir.equals(compiledDir))) { //the only files we want to add as libraries are located in the '.' and './lib'
-					return FileVisitResult.SKIP_SUBTREE;
-				}
+				//the only files we want to add as libraries are located in the '.' and './lib'
+				if(attrs.isSymbolicLink() || (
+						!dir.getFileName().toString().equals("lib") && 
+						!dir.equals(compiledDir) && 
+						!dir.getFileName().toString().equals("unmapped"))) { 
+							return FileVisitResult.SKIP_SUBTREE;
+					}
 				return FileVisitResult.CONTINUE;
 			}
 
 			@Override
 			public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
-				switch(file.getFileName().toString()) { //want every jar file except these 5 files.
-					case "devvotes-client.jar":
-					case "gameEngine-1.0.jar":
-					case "server-1.0.jar":
-					case "scratchpad.jar":
-					case "wildermyth.jar":
-						System.out.println("Skipping " + file.toAbsolutePath().normalize().toString() + " as library for the decompiler.");
-						return FileVisitResult.CONTINUE;
+				if(FileHelper.shouldBeRemapped(file)) {
+					System.out.println("Skipping " + file.toAbsolutePath().normalize().toString() + " as library for the decompiler.");
+					return FileVisitResult.CONTINUE;
 				}
 				System.out.println("Adding " + file.toAbsolutePath().normalize().toString() + " as library for the decompiler.");
 				b.addLibraries(file.normalize().toAbsolutePath());

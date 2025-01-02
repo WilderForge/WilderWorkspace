@@ -61,7 +61,7 @@ public class DecompileJarsTask extends DefaultTask {
 				if(FileHelper.shouldBeRemapped(file)) {
 					System.out.println("Adding " + file.toAbsolutePath().normalize().toString() + " as input for the decompiler.");
 					compiledJars.put(file.getFileName().toString(), file);
-					decompiledJarDests.put(file.getFileName().toString(), compiledDir.resolve("remapped").resolve(GameJars.fromPath(file).getPath()));
+					decompiledJarDests.put(file.getFileName().toString(), compiledDir.resolve(GameJars.fromPath(file).getPath()));
 					b.addJarsToDecomp(file.normalize().toAbsolutePath());
 					return FileVisitResult.CONTINUE;
 				}

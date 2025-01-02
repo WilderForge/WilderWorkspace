@@ -92,6 +92,7 @@ public class CopyLocalDependenciesToWorkspaceTask extends DefaultTask {
 						LOGGER.info("Not copying " + target + " - File at target location already exists.");
 						return FileVisitResult.CONTINUE;
 					}
+					Files.createDirectories(target.getParent());
 					Files.copy(file, target, StandardCopyOption.REPLACE_EXISTING);
 					return FileVisitResult.CONTINUE;
 				}

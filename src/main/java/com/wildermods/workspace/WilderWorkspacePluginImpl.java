@@ -160,6 +160,7 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 	 *
 	 * @param project the Gradle project
 	 */
+	@SuppressWarnings("resource")
 	private void addPluginDependencies(Project project) {
 		ScriptHandler buildscript = project.getBuildscript();
 		{
@@ -329,8 +330,8 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			task.setPlatform(extension.getPlatform());
 			task.setPatchline(extension.getPatchline());
 			task.setDestDir(extension.getGameDestDir());
-			task.finalizedBy(project.getTasks().getByName("copyFabricDependencies"));
-			task.finalizedBy(project.getTasks().getByName("copyFabricImplementors"));
+			//task.finalizedBy(project.getTasks().getByName("copyFabricDependencies"));
+			//task.finalizedBy(project.getTasks().getByName("copyFabricImplementors"));
 			task.finalizedBy(project.getTasks().getByName("copyProjectDependencies"));
 		});
 		

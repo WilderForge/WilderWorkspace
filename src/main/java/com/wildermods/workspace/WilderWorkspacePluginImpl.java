@@ -346,11 +346,11 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		
 		project.getTasks().register("setupDecompWorkspace", CopyLocalDependenciesToWorkspaceTask.class, task -> {
 			task.setOverwrite(false);
-			task.finalizedBy(project.provider(() -> {
+			task.dependsOn(project.provider(() -> {
 				DecompileJarsTask decompileTask = (DecompileJarsTask)project.getTasks().named("decompileJars").get();
 				return decompileTask;
 			}));
-			task.finalizedBy(project.getTasks().getByName("copyLocalDependenciesToWorkspace"));
+			task.dependsOn(project.getTasks().getByName("copyLocalDependenciesToWorkspace"));
 			project.getPlugins().withType(EclipsePlugin.class, eclipsePlugin -> {
 				task.finalizedBy(project.getTasks().named("eclipse"));
 			});

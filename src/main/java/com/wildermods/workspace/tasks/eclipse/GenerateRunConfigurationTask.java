@@ -47,7 +47,7 @@ public class GenerateRunConfigurationTask extends DefaultTask {
 	}
 
 	@TaskAction
-    private void generateLaunchConfig() {
+    public void generateLaunchConfig() {
         Path launchFile = getLaunchFile();
 
         String projectName = getProject().getName();

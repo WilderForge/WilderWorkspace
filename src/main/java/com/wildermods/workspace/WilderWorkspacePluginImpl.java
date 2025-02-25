@@ -35,6 +35,8 @@ import java.io.File;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLConnection;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Optional;
@@ -192,6 +194,7 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 	private void setupRepositories(WWProjectContext context) {
 		Project project = context.getProject();
 		RepositoryHandler repositories = project.getRepositories();
+		repositories.add(repositories.mavenLocal());
 		repositories.add(repositories.mavenCentral());
 		repositories.add(repositories.maven((repo) -> {
 			repo.setUrl("https://maven.fabricmc.net/");
@@ -259,6 +262,9 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			String jsonUrlPath = jsonDependency.getGroup().replace('.', '/') + "/"
 					+ jsonDependency.getName() + "/" + jsonDependency.getVersion() + "/" 
 					+ jsonDependency.getName() + "-" + jsonDependency.getVersion() + ".json";
+			
+			repositories.withType(MavenArtifactRepository.class).stream()
+					.forEach((repository) -> {project.getLogger().log(LogLevel.INFO, "Found repository: " + repository.getUrl());});
 
 			Optional<MavenArtifactRepository> repositoryOpt = repositories.withType(MavenArtifactRepository.class).stream()
 					.filter(repo -> canResolveUrl(context, repo.getUrl().toString() + jsonUrlPath))
@@ -488,16 +494,31 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		});
 	}
 	
-	private boolean canResolveUrl(WWProjectContext context, String url) {
+	private boolean canResolveUrl(WWProjectContext context, String urlString) {
+		Project project = context.getProject();
+		project.getLogger().log(LogLevel.INFO, "Checking URL: " + urlString);
+
 		try {
-			context.getProject().getLogger().log(LogLevel.INFO, "Checking " + url);
-			HttpsURLConnection connection = (HttpsURLConnection) new URL(url).openConnection();
-			connection.setRequestMethod("HEAD");
-			int responseCode = connection.getResponseCode();
-			context.getProject().getLogger().log(LogLevel.INFO, "Got response " + responseCode);
-			return responseCode == HttpsURLConnection.HTTP_OK;
+			URL url = new URL(urlString);
+			URLConnection connection = new URL(urlString).openConnection();
+
+			if (url.getProtocol().equals("file")) {
+				// Handle file URLs
+				boolean exists = Files.exists(Path.of(url.toURI()));
+				project.getLogger().log(LogLevel.INFO, "File URL check: " + (exists ? "File exists" : "File does NOT exist"));
+				return exists;
+			} else if (url.getProtocol().equals("https")) {
+				// Handle HTTPS URLs
+				HttpsURLConnection httpsConnection = (HttpsURLConnection) connection;
+				httpsConnection.setRequestMethod("HEAD");
+				int responseCode = httpsConnection.getResponseCode();
+				project.getLogger().log(LogLevel.INFO, "Got response " + responseCode + " for " + url);
+				return responseCode == HttpsURLConnection.HTTP_OK;
+			} else {
+				throw new IllegalArgumentException("Unsupported URL type (" + url.getProtocol() + ") for url " + url);
+			}
 		} catch (Exception e) {
-			context.getProject().getLogger().log(LogLevel.INFO, "Could not open " + url, e);
+			project.getLogger().log(LogLevel.INFO, "Could not resolve " + urlString, e);
 			return false;
 		}
 	}

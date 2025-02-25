@@ -1,0 +1,66 @@
+//This script is internal so that the example mod can be published to the maven repository,
+//You can delete this script, just make sure to delete the corresponding `apply` line in build.gradle
+
+ext.mavenLocalUrl = repositories.mavenLocal().url.toString()
+
+tasks.register('checkArtifactExists') {
+    doLast {
+		// Skip this task if --force is present
+		if (project.hasProperty('force')) {
+			logger.lifecycle("Skipping artifact existence check due to --force flag.")
+			return
+		}
+		
+        def repoUrl = project.hasProperty('mavenRepoUrl') ? project.mavenRepoUrl : mavenLocalUrl
+        def projectGroup = "${project.group}.${project.archivesBaseName}"
+        def gradleGroup = "${projectGroup}.gradle.plugin"
+        def artifactPath = "${repoUrl}/${projectGroup.replace('.', '/')}/${gradleGroup}/${project.version}/${gradleGroup}-${project.version}.jar"
+        logger.lifecycle("Checking if artifact exists at: $artifactPath")
+        
+        if (artifactPath.startsWith('file:/')) {
+            def file = new File(new URI(artifactPath))
+            if (file.exists()) {
+                throw new IllegalStateException("Artifact '${artifactPath}' already exists. Publishing aborted.")
+            }
+        } else {
+            def url = new URL(artifactPath)
+            def connection = url.openConnection()
+            connection.setRequestMethod('HEAD')
+            if (connection.responseCode == 200) {
+                throw new IllegalStateException("Artifact '${artifactPath}' already exists. Publishing aborted.")
+            }
+        }
+        logger.lifecycle("Artifact does not exist, proceeding with publish.")
+    }
+}
+
+tasks.named('publish') {
+    dependsOn 'checkArtifactExists'
+}
+
+tasks.withType(PublishToMavenRepository).configureEach {
+    if (it.name.equals("publishPluginMavenPublicationToMavenRepository")) {
+        logger.lifecycle("Disabling task: ${it.name}")
+        it.enabled = false
+    }
+}
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            from components.java
+            groupId = project.group + ".workspace"
+            artifactId = 'com.wildermods.workspace.gradle.plugin'  // Set the expected plugin artifact ID
+            version = project.version
+
+            // Attach sources JAR to the publication
+            artifact sourceJar
+        }
+    }
+
+    repositories {
+        maven {
+            url = uri(project.hasProperty('mavenRepoUrl') ? project.mavenRepoUrl : mavenLocalUrl) // Default to mavenLocal if no custom URL is provided
+        }
+    }
+}

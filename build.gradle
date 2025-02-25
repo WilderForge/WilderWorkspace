@@ -5,6 +5,7 @@ plugins {
 }
 
 repositories {
+	mavenLocal()
     mavenCentral()
     maven {
         url "https://maven.fabricmc.net/"
@@ -14,9 +15,14 @@ repositories {
     }
 }
 
+println(repositories)
+
 version = workspaceVersion
 group = "com.wildermods"
 archivesBaseName = "workspace"
+
+apply from: 'replaceTokenScript.gradle'
+apply from: 'publishScript.gradle'
 
 sourceCompatibility = '17'
 targetCompatibility = '17'
@@ -30,152 +36,4 @@ dependencies {
     implementation libs.fabric.loom
     implementation libs.vineflower
     implementation libs.gson
-}
-
-import org.apache.tools.ant.filters.ReplaceTokens
-
-task processSource(type: Sync) {
-    from sourceSets.main.java.srcDirs
-    into "$buildDir/processedSrc"
- 
- 	// DEBUG CODE TO VIEW AVAILABLE METHODS - DO NOT REMOVE
- 	/*   
-    logger.lifecycle("Available versions:")
-    libs.versions.properties.each { key, value ->
-        logger.lifecycle("$key -> $value")
-        value.properties.each { key2, value2 ->
-            logger.lifecycle("$key -> $value -> [$key2 -> $value2]")
-
-            // Check if value2 is not null before accessing its methods and properties
-            if (value2 != null) {
-                // Print the full method signatures for value2
-                logger.lifecycle("Methods for $value2:")
-                value2.metaClass.methods.each { method ->
-                    // Get the method name and parameter types
-                    def methodSignature = "${method.name}(${method.parameterTypes*.name.join(', ')}) -> ${method.returnType.name}"
-                    logger.lifecycle("Method Signature: $methodSignature")
-                }
-
-                // Optionally, print properties as well (if needed)
-                value2.metaClass.properties.each { property ->
-                    logger.lifecycle("Property: ${property.name}")
-                }
-            } else {
-                logger.lifecycle("value2 is null for $key2")
-            }
-        }
-    }
-    */
-    
-    //The version of the WilderWorkspace gradle plugin
-    inputs.property 'workspaceVersion', workspaceVersion
-    
-    def providerVersion = libs.versions.provider.version.get()
-    def fabricLoaderVersion = libs.versions.fabric.loader.version.get()
-    
-    //dependencies for building and running WilderWorkspace gradle plugin itself
-    def commonsIOVersion = libs.versions.commons.io.version.get()
-    def commonsLangVersion = libs.versions.commons.Lang.version.get()
-    def commonsTextVersion = libs.versions.commons.Text.version.get()
-    def vineFlowerVersion = libs.versions.vineflower.version.get()
-    def loomVersion = libs.versions.fabric.Loom.version.get()
-    def gsonVersion = libs.versions.gson.version.get()
-    
-    //transitive dependencies
-    def log4jVersion = libs.versions.log4j.version.get()
-    
-    filter(ReplaceTokens, tokens: [
-        //The version of the WilderWorkspace gradle plugin
-        workspaceVersion: workspaceVersion, 
-        
-        //dependencies that projects using WilderWorkspace will need in order to mod Wildermyth
-        providerVersion: providerVersion,
-        fabricLoaderVersion: fabricLoaderVersion,
-        gsonVersion: gsonVersion,
-        
-        //dependencies for building and running WilderWorkspace gradle plugin itself
-        commonsIOVersion: commonsIOVersion,
-        commonsLangVersion: commonsLangVersion,
-        commonsTextVersion: commonsTextVersion,
-        vineFlowerVersion: vineFlowerVersion,
-        loomVersion: loomVersion,
-        
-        //transitive dependencies
-        log4jVersion: log4jVersion
-    ])
-}
-
-compileJava {
-    source = fileTree(dir: "$buildDir/processedSrc", include: '**/*.java')
-    dependsOn processSource
-}
-
-ext.mavenLocalUrl = repositories.mavenLocal().url.toString()
-
-task sourceJar(type: Jar) {
-    from sourceSets.main.allSource
-    archiveClassifier.set('sources')
-}
-
-tasks.register('checkArtifactExists') {
-    doLast {
-		// Skip this task if --force is present
-		if (project.hasProperty('force')) {
-			logger.lifecycle("Skipping artifact existence check due to --force flag.")
-			return
-		}
-		
-        def repoUrl = project.hasProperty('mavenRepoUrl') ? project.mavenRepoUrl : mavenLocalUrl
-        def projectGroup = "${project.group}.${project.archivesBaseName}"
-        def gradleGroup = "${projectGroup}.gradle.plugin"
-        def artifactPath = "${repoUrl}/${projectGroup.replace('.', '/')}/${gradleGroup}/${project.version}/${gradleGroup}-${project.version}.jar"
-        logger.lifecycle("Checking if artifact exists at: $artifactPath")
-        
-        if (artifactPath.startsWith('file:/')) {
-            def file = new File(new URI(artifactPath))
-            if (file.exists()) {
-                throw new IllegalStateException("Artifact '${artifactPath}' already exists. Publishing aborted.")
-            }
-        } else {
-            def url = new URL(artifactPath)
-            def connection = url.openConnection()
-            connection.setRequestMethod('HEAD')
-            if (connection.responseCode == 200) {
-                throw new IllegalStateException("Artifact '${artifactPath}' already exists. Publishing aborted.")
-            }
-        }
-        logger.lifecycle("Artifact does not exist, proceeding with publish.")
-    }
-}
-
-tasks.named('publish') {
-    dependsOn 'checkArtifactExists'
-}
-
-
-tasks.withType(PublishToMavenRepository).configureEach {
-    if (it.name.equals("publishPluginMavenPublicationToMavenRepository")) {
-        logger.lifecycle("Disabling task: ${it.name}")
-        it.enabled = false
-    }
-}
-
-publishing {
-    publications {
-        mavenJava(MavenPublication) {
-            from components.java
-            groupId = project.group + ".workspace"
-            artifactId = 'com.wildermods.workspace.gradle.plugin'  // Set the expected plugin artifact ID
-            version = project.version
-
-            // Attach sources JAR to the publication
-            artifact sourceJar
-        }
-    }
-
-    repositories {
-        maven {
-            url = uri(project.hasProperty('mavenRepoUrl') ? project.mavenRepoUrl : mavenLocalUrl) // Default to mavenLocal if no custom URL is provided
-        }
-    }
 }

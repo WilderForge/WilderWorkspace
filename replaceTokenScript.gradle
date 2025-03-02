@@ -66,6 +66,11 @@ task replaceTokensInSource(type: Copy) {
     }
 }
 
+gradle.taskGraph.whenReady { taskGraph ->
+    replaceTokensInSource.outputs.upToDateWhen { false }
+    replaceTokensInResources.outputs.upToDateWhen { false }
+}
+
 
 sourceSets {
     processed {

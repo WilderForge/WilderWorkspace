@@ -1,6 +1,6 @@
 [versions]
 commons_lang_version = "3.17.0"
-commons_text_version = "1.13.0"
+commons_text_version = "1.13.1"
 commons_io_version = "2.18.0"
 fabric_loom_version = "1.10.5"
 provider_version = "1.7.3.0"

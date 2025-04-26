@@ -7,7 +7,7 @@ provider_version = "1.7.3.0"
 log4j_version = "2.24.3"
 vineflower_version = "1.11.1"
 gson_version = "2.13.1"
-fabric_loader_version = "0.16.13"
+fabric_loader_version = "0.16.14"
 
 [libraries]
 commons_lang = { module = "org.apache.commons:commons-lang3", version.ref = "commons_lang_version"}

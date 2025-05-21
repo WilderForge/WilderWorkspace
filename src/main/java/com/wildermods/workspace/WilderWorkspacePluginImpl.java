@@ -25,6 +25,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.wildermods.workspace.dependency.ProjectDependencyType;
+import com.wildermods.workspace.dependency.WWProjectDependency;
 import com.wildermods.workspace.tasks.ClearLocalRuntimeTask;
 import com.wildermods.workspace.tasks.CopyLocalDependenciesToWorkspaceTask;
 import com.wildermods.workspace.tasks.DecompileJarsTask;
@@ -44,6 +46,7 @@ import java.util.Set;
 
 import javax.net.ssl.HttpsURLConnection;
 
+import org.gradle.api.DefaultTask;
 import org.gradle.api.Plugin;
 
 /**
@@ -335,9 +338,13 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			task.setPlatform(extension.getPlatform());
 			task.setPatchline(extension.getPatchline());
 			task.setDestDir(extension.getGameDestDir());
+			task.setPlatform(extension.getPlatform());
+			task.setSteamUser(extension.getSteamUser());
 			//task.finalizedBy(project.getTasks().getByName("copyFabricDependencies"));
 			//task.finalizedBy(project.getTasks().getByName("copyFabricImplementors"));
 			task.finalizedBy(project.getTasks().getByName("copyProjectDependencies"));
+			task.getOutputs().cacheIf(t -> false);
+			task.getOutputs().upToDateWhen(t -> false);
 		});
 		
 		project.getTasks().register("decompileJars", DecompileJarsTask.class, task -> {
@@ -350,14 +357,17 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			task.setDestDir(extension.getGameDestDir());
 		});
 		
-		project.getTasks().register("setupDecompWorkspace", CopyLocalDependenciesToWorkspaceTask.class, task -> {
-			task.setOverwrite(false);
+		project.getTasks().register("setupDecompWorkspace", DefaultTask.class, task -> {
+			task.dependsOn(project.getTasks().getByName("copyLocalDependenciesToWorkspace"));
 			task.dependsOn(project.provider(() -> {
 				DecompileJarsTask decompileTask = (DecompileJarsTask)project.getTasks().named("decompileJars").get();
+
 				return decompileTask;
 			}));
-			task.dependsOn(project.getTasks().getByName("copyLocalDependenciesToWorkspace"));
+
+
 			project.getPlugins().withType(EclipsePlugin.class, eclipsePlugin -> {
+
 				task.finalizedBy(project.getTasks().named("eclipse"));
 			});
 			project.getPlugins().withType(IdeaPlugin.class, ideaPlugin -> {

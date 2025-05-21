@@ -36,4 +36,5 @@ dependencies {
     implementation libs.fabric.loom
     implementation libs.vineflower
     implementation libs.gson
+    implementation libs.thrixlvault
 }

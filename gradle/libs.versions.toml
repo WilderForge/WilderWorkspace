@@ -2,12 +2,15 @@
 commons_lang_version = "3.17.0"
 commons_text_version = "1.13.1"
 commons_io_version = "2.19.0"
+fabric_loader_version = "0.16.14"
 fabric_loom_version = "1.10.5"
+gson_version = "2.13.1"
 provider_version = "1.7.3.1"
 log4j_version = "2.24.3"
+thrixlvault_version = "0.4.0.1"
 vineflower_version = "1.11.1"
-gson_version = "2.13.1"
-fabric_loader_version = "0.16.14"
+
+
 
 [libraries]
 commons_lang = { module = "org.apache.commons:commons-lang3", version.ref = "commons_lang_version"}
@@ -16,6 +19,7 @@ commons_io = { module = "commons-io:commons-io", version.ref = "commons_io_versi
 fabric-loom = { module = "net.fabricmc:fabric-loom", version.ref = "fabric_loom_version"}
 vineflower = { module = "org.vineflower:vineflower", version.ref = "vineflower_version"}
 gson = { module = "com.google.code.gson:gson", version.ref = "gson_version"}
+thrixlvault = { module = "com.wildermods:thrixlvault", version.ref = "thrixlvault_version"}
 
 fabric-loader = { module = "net.fabricmc:fabric-loader", version.ref = "fabric_loader_version" }
 provider = { module = "com.wildermods:provider", version.ref = "provider_version" }

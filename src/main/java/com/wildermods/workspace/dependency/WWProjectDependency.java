@@ -1,7 +1,10 @@
-package com.wildermods.workspace;
+package com.wildermods.workspace.dependency;
 
 import org.gradle.api.artifacts.Dependency;
-import static com.wildermods.workspace.ProjectDependencyType.*;
+
+import com.wildermods.workspace.WilderWorkspacePlugin;
+
+import static com.wildermods.workspace.dependency.ProjectDependencyType.*;
 
 import java.net.URI;
 import java.net.URISyntaxException;

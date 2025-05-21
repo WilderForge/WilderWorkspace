@@ -16,6 +16,7 @@ def replacementTokens = [
     vineFlowerVersion: libs.versions.vineflower.version.get(),
     loomVersion: libs.versions.fabric.Loom.version.get(),
     gsonVersion: libs.versions.gson.version.get(),
+    thrixlvaultVersion: libs.versions.thrixlvault.version.get(),
     
     //transitive dependencies
     log4jVersion: libs.versions.log4j.version.get()

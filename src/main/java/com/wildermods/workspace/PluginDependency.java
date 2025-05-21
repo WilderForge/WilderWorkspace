@@ -2,6 +2,8 @@ package com.wildermods.workspace;
 
 import org.gradle.api.artifacts.Dependency;
 
+import com.wildermods.workspace.dependency.WWProjectDependency;
+
 /**
  * A PluginDependency represents a dependency that is required to build and run
  * the WilderWorkspace gradle plugin itself.
@@ -16,8 +18,9 @@ enum PluginDependency implements Dependency {
 		COMMONS_TEXT("org.apache.commons", "commons-text", "@commonsTextVersion@"),
 		GSON("com.google.code.gson", "gson", "@gsonVersion@"),
 		LOOM("net.fabricmc", "fabric-loom", "@loomVersion@"),
-		VINEFLOWER("org.vineflower", "vineflower", "@vineFlowerVersion@");
-	
+		VINEFLOWER("org.vineflower", "vineflower", "@vineFlowerVersion@"),
+		THRIXLVAULT("com.wildermods", "thrixlvault", "@thrixlvaultVersion@")
+		
 	;
 	
 	private final String groupID;

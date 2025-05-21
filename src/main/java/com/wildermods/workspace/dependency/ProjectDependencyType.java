@@ -1,4 +1,4 @@
-package com.wildermods.workspace;
+package com.wildermods.workspace.dependency;
 
 public enum ProjectDependencyType {
 
@@ -55,5 +55,10 @@ public enum ProjectDependencyType {
 	 * 
 	 * At compile time, however, it is unavailable as it's nested inside of fabric-loader
 	 */
-	retrieveJson
+	retrieveJson,
+	
+	/**
+	 * Special dependency type for the base game
+	 */
+	wildermyth
 }

@@ -13,6 +13,7 @@ public enum Platform {
 		epic(unknownPlatformLocation("epic")),
 		itch(unknownPlatformLocation("itch")),
 		gog(unknownPlatformLocation("gog")),
+		thrixlvault(unknownPlatformLocation("thrixlvault")),
 		filesystem(() -> {return null;});
 		
 		private Callable<Path> dir;

@@ -6,7 +6,7 @@ fabric_loader_version = "0.16.14"
 fabric_loom_version = "1.10.5"
 gson_version = "2.13.1"
 provider_version = "1.10.0.0"
-log4j_version = "2.24.3"
+log4j_version = "2.25.0"
 thrixlvault_version = "0.5.1.0"
 vineflower_version = "1.11.1"
 

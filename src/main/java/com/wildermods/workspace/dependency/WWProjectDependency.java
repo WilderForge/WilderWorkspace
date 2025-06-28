@@ -36,8 +36,8 @@ import java.net.URISyntaxException;
  */
 public enum WWProjectDependency implements Dependency {
 	
-		fabricLoader(fabricImpl, "net.fabricmc", "fabric-loader", "@fabricLoaderVersion@"),
-		fabricLoaderDepsJson(retrieveJson, "net.fabricmc", "fabric-loader", "@fabricLoaderVersion@"),
+		fabricLoader(fabricImpl, "com.wildermods", "fabric-loader", "@fabricLoaderVersion@"),
+		fabricLoaderDepsJson(retrieveJson, "com.wildermods", "fabric-loader", "@fabricLoaderVersion@"),
 		gameProvider(fabricImpl, "com.wildermods", "provider", "@providerVersion@"),
 		log4jCore(fabricDep, "org.apache.logging.log4j", "log4j-core", "@log4jVersion@"),
 		log4jAPI(fabricDep, "org.apache.logging.log4j", "log4j-api", "@log4jVersion@"),

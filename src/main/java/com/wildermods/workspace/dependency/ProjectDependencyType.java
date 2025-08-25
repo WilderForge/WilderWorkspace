@@ -58,6 +58,11 @@ public enum ProjectDependencyType {
 	retrieveJson,
 	
 	/**
+	 * Jar in Jar dependency
+	 */
+	nest,
+	
+	/**
 	 * Special dependency type for the base game
 	 */
 	wildermyth

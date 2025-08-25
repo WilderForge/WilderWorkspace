@@ -8,6 +8,10 @@ def replacementTokens = [
 	workspaceVersion: project.version,
     providerVersion: libs.versions.provider.version.get(),
     fabricLoaderVersion: libs.versions.fabric.loader.version.get(),
+    asmVersion: libs.versions.asm.version.get(),
+    
+    mixinVersion: libs.versions.mixin.version.get(),
+    guavaVersion: libs.versions.guava.version.get(),
     
     //dependencies for building and running WilderWorkspace gradle plugin itself
     commonsIOVersion: libs.versions.commons.io.version.get(),

@@ -36,8 +36,17 @@ import java.net.URISyntaxException;
  */
 public enum WWProjectDependency {
 	
+		asm(fabricImpl, "org.ow2.asm", "asm", "@asmVersion@"),
+		asmAnalysis(fabricImpl, "org.ow2.asm", "asm-analysis", "@asmVersion@"),
+		asmCommons(fabricImpl, "org.ow2.asm", "asm-commons", "@asmVersion@"),
+		asmTree(fabricImpl, "org.ow2.asm", "asm-tree", "@asmVersion@"),
+		asmUtil(fabricImpl, "org.ow2.asm", "asm-util", "@asmVersion@"),
 		fabricLoader(fabricImpl, "com.wildermods", "fabric-loader", "@fabricLoaderVersion@"),
-		fabricLoaderDepsJson(retrieveJson, "com.wildermods", "fabric-loader", "@fabricLoaderVersion@"),
+		
+		mixin(fabricImpl, "net.fabricmc", "sponge-mixin", "@mixinVersion@"),
+		guava(fabricImpl, "com.google.guava", "guava", "@guavaVersion@"),
+		gson(fabricImpl, "com.google.code.gson", "gson", "@gsonVersion@"),
+		
 		gameProvider(fabricImpl, "com.wildermods", "provider", "@providerVersion@"),
 		log4jCore(fabricDep, "org.apache.logging.log4j", "log4j-core", "@log4jVersion@"),
 		log4jAPI(fabricDep, "org.apache.logging.log4j", "log4j-api", "@log4jVersion@"),

@@ -1,7 +1,5 @@
 package com.wildermods.workspace;
 
-import org.gradle.api.artifacts.Dependency;
-
 import com.wildermods.workspace.dependency.WWProjectDependency;
 
 /**
@@ -11,7 +9,7 @@ import com.wildermods.workspace.dependency.WWProjectDependency;
  * @see {@link WWProjectDependency} for dependencies that modded environments made
  * using WilderWorkspace will need in order to run
  */
-enum PluginDependency implements Dependency {
+enum PluginDependency {
 
 		COMMONS_IO("commons-io", "commons-io", "@commonsIOVersion@"),
 		COMMONS_LANG("org.apache.commons", "commons-lang3", "@commonsLangVersion@"),
@@ -41,37 +39,21 @@ enum PluginDependency implements Dependency {
 		return dependencyString;
 	}
 
-	@Override
-	public void because(String reason) {
-		this.reason = reason;
-	}
 
-	@Override
-	public boolean contentEquals(Dependency dependency) {
-		return dependency == this;
-	}
-
-	@Override
-	public Dependency copy() {
-		throw new AssertionError();
-	}
-
-	@Override
 	public String getGroup() {
 		return groupID;
 	}
 
-	@Override
+
 	public String getName() {
 		return artifact;
 	}
 
-	@Override
+
 	public String getReason() {
 		return reason;
 	}
 
-	@Override
 	public String getVersion() {
 		return version;
 	}

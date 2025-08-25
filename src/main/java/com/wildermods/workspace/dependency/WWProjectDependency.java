@@ -34,7 +34,7 @@ import java.net.URISyntaxException;
  * gradle plugin itself, see {@link PluginDependency}.
  * </p>
  */
-public enum WWProjectDependency implements Dependency {
+public enum WWProjectDependency {
 	
 		fabricLoader(fabricImpl, "com.wildermods", "fabric-loader", "@fabricLoaderVersion@"),
 		fabricLoaderDepsJson(retrieveJson, "com.wildermods", "fabric-loader", "@fabricLoaderVersion@"),
@@ -96,17 +96,12 @@ public enum WWProjectDependency implements Dependency {
 		return dependencyString;
 	}
 
-	@Override
+
 	public void because(String reason) {
 		this.reason = reason;
 	}
 
-	@Override
-	public boolean contentEquals(Dependency dependency) {
-		return dependency == this;
-	}
 
-	@Override
 	public Dependency copy() {
 		throw new AssertionError();
 	}
@@ -125,17 +120,17 @@ public enum WWProjectDependency implements Dependency {
 		return type;
 	}
 
-	@Override
+
 	public String getGroup() {
 		return groupID;
 	}
 
-	@Override
+
 	public String getName() {
 		return artifact;
 	}
 
-	@Override
+
 	public String getReason() {
 		return reason;
 	}
@@ -154,7 +149,7 @@ public enum WWProjectDependency implements Dependency {
 		return gitRepo;
 	}
 
-	@Override
+
 	public String getVersion() {
 		return version;
 	}

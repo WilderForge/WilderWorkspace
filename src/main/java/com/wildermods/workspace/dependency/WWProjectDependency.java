@@ -42,6 +42,7 @@ public enum WWProjectDependency {
 		asmTree(fabricImpl, "org.ow2.asm", "asm-tree", "@asmVersion@"),
 		asmUtil(fabricImpl, "org.ow2.asm", "asm-util", "@asmVersion@"),
 		fabricLoader(fabricImpl, "com.wildermods", "fabric-loader", "@fabricLoaderVersion@"),
+		fabricLoaderDepsJson(retrieveJson, "com.wildermods", "fabric-loader", "@fabricLoaderVersion@"),
 		
 		mixin(fabricImpl, "net.fabricmc", "sponge-mixin", "@mixinVersion@"),
 		guava(fabricImpl, "com.google.guava", "guava", "@guavaVersion@"),

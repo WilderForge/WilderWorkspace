@@ -37,6 +37,7 @@ import com.wildermods.thrixlvault.exception.DatabaseMissingBlobError.DatabaseMis
 import com.wildermods.thrixlvault.exception.MissingResourceException.MissingResourceProblem;
 import com.wildermods.thrixlvault.exception.MissingVersionException;
 import com.wildermods.thrixlvault.steam.IDownloadable;
+import com.wildermods.thrixlvault.steam.ISteamDownloadable;
 import com.wildermods.thrixlvault.wildermyth.WildermythManifest;
 import com.wildermods.workspace.WilderWorkspaceExtension;
 import com.wildermods.workspace.WilderWorkspacePluginImpl;
@@ -109,7 +110,7 @@ public class CopyLocalDependenciesToWorkspaceTask extends DefaultTask {
 		
 		HashMap<IDownloadable, ChrysalisizedVault> vaultedDeps = new HashMap<>();
 		HashMap<IDownloadable, ChrysalisizedVault> neededDeps = new HashMap<>();
-		HashMap<IDownloadable, VaultedDependencySpec> toDownloadDeps = new HashMap();
+		HashMap<ISteamDownloadable, VaultedDependencySpec> toDownloadDeps = new HashMap();
 		HashMap<IDownloadable, ChrysalisizedVault> chrysalisizedDownloads = new HashMap();
 		HashMap<IDownloadable, ChrysalisizedVault> toExportDeps = new HashMap<>();
 		

@@ -232,7 +232,7 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			configuration.setCanBeConsumed(false);
 			configuration.setTransitive(false);
 		});
-	    project.getConfigurations().getByName("compileClasspath").extendsFrom(nest);
+		project.getConfigurations().getByName("compileClasspath").extendsFrom(nest);
 
 		
 		retrieveJson = project.getConfigurations().create(ProjectDependencyType.retrieveJson.name(), configuration -> {
@@ -488,36 +488,58 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 				project.getTasks().named("jar", Jar.class).flatMap(Jar::getArchiveFile)	
 			);
 			
-		    task.getNestedJars().from(project.provider(() -> {
-		        File outputDir = project.getTasks()
-		            .named("generateNestableJars", NestableJarGenerationTask.class)
-		            .get()
-		            .getOutputDirectory()
-		            .get()
-		            .getAsFile();
-		        return project.fileTree(outputDir).matching(spec -> spec.include("*.jar"));
-		    }));
+			task.getNestedJars().from(project.provider(() -> {
+				File outputDir = project.getTasks()
+					.named("generateNestableJars", NestableJarGenerationTask.class)
+					.get()
+					.getOutputDirectory()
+					.get()
+					.getAsFile();
+				return project.fileTree(outputDir).matching(spec -> spec.include("*.jar"));
+			}));
+			
+			//extract fabric.mod.json from the main jar, and place it in project.getLayout().getBuildDirectory().dir("nested-jars")
+			
+			task.doLast(t ->{
+				File jsonOutputDir = project.getLayout().getBuildDirectory().dir("nested-jars").get().getAsFile();
+				File mainJarFile = task.getMainJar().get().getAsFile();
+				
+				project.getLogger().info("EXISTSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS: " + mainJarFile.exists());
+				
+				project.copy(copySpec -> {
+					copySpec.from(project.zipTree(mainJarFile), spec -> {
+						spec.include("*fabric.mod.json");
+					});
+					copySpec.into(jsonOutputDir);
+				});
+			});
 		});
 		
 		project.getTasks().named("assemble").configure(assemble -> assemble.dependsOn(nestJarsTask));
+		project.getTasks().named("publish").configure(publish -> {
+			publish.dependsOn(project.getTasks().named("assemble"));
+			project.getTasks().named("jar").get().dependsOn(genNestJars);
+		});
+		
 		if(project.getPlugins().hasPlugin("eclipse")) {
 			project.getTasks().named("eclipseClasspath").configure(eclipse -> eclipse.dependsOn(genNestJars));
 		}
 		
 		project.getTasks().named("jar", Jar.class, jar -> {
-		    Provider<FileTree> nestedJars = project.provider(() -> {
-		        if (project.getGradle().getTaskGraph().hasTask(":publish")) {
-		            return project.fileTree(project.getLayout().getBuildDirectory().dir("nested-jars").get(), spec -> {
-		                spec.include("*.jar");
-		            });
-		        } else {
-		            return project.files().getAsFileTree(); // empty FileTree
-		        }
-		    });
+			Provider<FileTree> nestedJars = project.provider(() -> {
+				if (project.getGradle().getTaskGraph().hasTask(":publish")) {
+					return project.fileTree(project.getLayout().getBuildDirectory().dir("nested-jars").get(), spec -> {
+						spec.include("*.jar");
+						spec.include("fabric.mod.json");
+					});
+				} else {
+					return project.files().getAsFileTree(); // empty FileTree
+				}
+			});
 
-		    jar.from(nestedJars, copySpec -> {
-		        copySpec.into("META-INF/jars");
-		    });
+			jar.from(nestedJars, copySpec -> {
+				copySpec.into("META-INF/jars");
+			});
 
 		});
 	}
@@ -583,7 +605,7 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 
 				EclipseModel eclipseModel = proj.getExtensions().getByType(EclipseModel.class);
 				EclipseClasspath classpath = eclipseModel.getClasspath();
-	            
+				
 				classpath.file(xmlFileContent -> {
 					xmlFileContent.getWhenMerged().add((classPathMerged) -> {
 						Classpath c = (Classpath) classPathMerged;

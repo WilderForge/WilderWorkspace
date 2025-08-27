@@ -47,4 +47,30 @@ public enum OS {
 		}
 	}
 	
+	public static com.wildermods.thrixlvault.utils.OS convert(OS os) {
+		switch(os) {
+			case LINUX:
+				return com.wildermods.thrixlvault.utils.OS.LINUX;
+			case MAC:
+				return com.wildermods.thrixlvault.utils.OS.MAC;
+			case WINDOWS:
+				return com.wildermods.thrixlvault.utils.OS.WINDOWS;
+			default:
+				throw new IllegalArgumentException(os + "");
+		}
+	}
+	
+	public static OS convert(com.wildermods.thrixlvault.utils.OS os) {
+		switch(os) {
+			case LINUX:
+				return LINUX;
+			case MAC:
+				return MAC;
+			case WINDOWS:
+				return WINDOWS;
+			default:
+				throw new AssertionError(os + "");
+		}
+	}
+	
 }

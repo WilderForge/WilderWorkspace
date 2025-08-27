@@ -36,26 +36,25 @@ import java.net.URISyntaxException;
  */
 public enum WWProjectDependency {
 	
-		asm(fabricImpl, "org.ow2.asm", "asm", "@asmVersion@"),
-		asmAnalysis(fabricImpl, "org.ow2.asm", "asm-analysis", "@asmVersion@"),
-		asmCommons(fabricImpl, "org.ow2.asm", "asm-commons", "@asmVersion@"),
-		asmTree(fabricImpl, "org.ow2.asm", "asm-tree", "@asmVersion@"),
-		asmUtil(fabricImpl, "org.ow2.asm", "asm-util", "@asmVersion@"),
-		fabricLoader(fabricImpl, "com.wildermods", "fabric-loader", "@fabricLoaderVersion@"),
-		fabricLoaderDepsJson(retrieveJson, "com.wildermods", "fabric-loader", "@fabricLoaderVersion@"),
+		asm("org.ow2.asm", "asm", "@asmVersion@", fabricImpl),
+		asmAnalysis("org.ow2.asm", "asm-analysis", "@asmVersion@", fabricImpl),
+		asmCommons("org.ow2.asm", "asm-commons", "@asmVersion@", fabricImpl),
+		asmTree("org.ow2.asm", "asm-tree", "@asmVersion@", fabricImpl),
+		asmUtil("org.ow2.asm", "asm-util", "@asmVersion@", fabricImpl),
+		fabricLoader("com.wildermods", "fabric-loader", "@fabricLoaderVersion@", fabricImpl, retrieveJson),
 		
-		mixin(fabricImpl, "net.fabricmc", "sponge-mixin", "@mixinVersion@"),
-		guava(fabricImpl, "com.google.guava", "guava", "@guavaVersion@"),
-		gson(fabricImpl, "com.google.code.gson", "gson", "@gsonVersion@"),
+		mixin("net.fabricmc", "sponge-mixin", "@mixinVersion@", fabricImpl),
+		guava("com.google.guava", "guava", "@guavaVersion@", fabricImpl),
+		gson("com.google.code.gson", "gson", "@gsonVersion@", fabricImpl),
 		
-		gameProvider(fabricImpl, "com.wildermods", "provider", "@providerVersion@"),
-		log4jCore(fabricDep, "org.apache.logging.log4j", "log4j-core", "@log4jVersion@"),
-		log4jAPI(fabricDep, "org.apache.logging.log4j", "log4j-api", "@log4jVersion@"),
-		log4jSLF4J(fabricDep, "org.apache.logging.log4j", "log4j-slf4j2-impl", "@log4jVersion@"),
-		vineflower(fabricDep, "org.vineflower", "vineflower", "@vineFlowerVersion@")
+		gameProvider("com.wildermods", "provider", "@providerVersion@", fabricImpl),
+		log4jCore("org.apache.logging.log4j", "log4j-core", "@log4jVersion@", fabricDep),
+		log4jAPI("org.apache.logging.log4j", "log4j-api", "@log4jVersion@", fabricDep),
+		log4jSLF4J("org.apache.logging.log4j", "log4j-slf4j2-impl", "@log4jVersion@", fabricDep),
+		vineflower("org.vineflower", "vineflower", "@vineFlowerVersion@", fabricDep)
 	;
 
-	private final ProjectDependencyType type;
+	private final ProjectDependencyType[] types;
 	private final String groupID;
 	private final String artifact;
 	private final String version;
@@ -71,8 +70,8 @@ public enum WWProjectDependency {
 	 * @param artifact the artifact ID of the dependency
 	 * @param version the version of the dependency
 	 */
-	private WWProjectDependency(ProjectDependencyType type, String groupID, String artifact, String version) {
-		this(type, groupID, artifact, version, null);
+	private WWProjectDependency(String groupID, String artifact, String version, ProjectDependencyType... types) {
+		this(groupID, artifact, version, null, types);
 	}
 	
 	/**
@@ -84,8 +83,8 @@ public enum WWProjectDependency {
 	 * @param version the version of the dependency
 	 * @param gitRepo the URL of the Git repository associated with the dependency, or {@code null} if not applicable
 	 */
-	private WWProjectDependency(ProjectDependencyType type, String groupID, String artifact, String version, String gitRepo) {
-		this.type = type;
+	private WWProjectDependency(String groupID, String artifact, String version, String gitRepo, ProjectDependencyType... types) {
+		this.types = types;
 		this.groupID = groupID;
 		this.artifact = artifact;
 		this.version = version;
@@ -126,8 +125,8 @@ public enum WWProjectDependency {
 	 * 
 	 * @return the type of the dependency
 	 */
-	public ProjectDependencyType getType() {
-		return type;
+	public ProjectDependencyType[] getTypes() {
+		return types;
 	}
 
 

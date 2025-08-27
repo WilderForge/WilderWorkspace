@@ -58,7 +58,7 @@ public enum ProjectDependencyType {
 	retrieveJson,
 	
 	/**
-	 * Jar in Jar dependency
+	 * Jar in Jar dependency for a mod
 	 */
 	nest,
 	

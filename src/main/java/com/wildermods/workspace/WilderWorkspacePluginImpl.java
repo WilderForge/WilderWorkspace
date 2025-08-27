@@ -6,11 +6,15 @@ import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
+import org.gradle.api.file.FileTree;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.initialization.dsl.ScriptHandler;
 import org.gradle.api.logging.LogLevel;
+import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Copy;
+import org.gradle.api.tasks.TaskProvider;
 import org.gradle.internal.classloader.VisitableURLClassLoader;
+import org.gradle.jvm.tasks.Jar;
 import org.gradle.plugins.ide.eclipse.EclipsePlugin;
 import org.gradle.plugins.ide.eclipse.model.Classpath;
 import org.gradle.plugins.ide.eclipse.model.ClasspathEntry;
@@ -27,11 +31,16 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.wildermods.workspace.dependency.ProjectDependencyType;
 import com.wildermods.workspace.dependency.WWProjectDependency;
+import com.wildermods.workspace.tasks.AddToDevRuntimeClassPathTask;
 import com.wildermods.workspace.tasks.ClearLocalRuntimeTask;
 import com.wildermods.workspace.tasks.CopyLocalDependenciesToWorkspaceTask;
 import com.wildermods.workspace.tasks.DecompileJarsTask;
+import com.wildermods.workspace.tasks.GenerateLauncherMetadataTask;
+import com.wildermods.workspace.tasks.JarJarTask;
 import com.wildermods.workspace.tasks.eclipse.GenerateRunConfigurationTask;
 import com.wildermods.workspace.util.ExceptionUtil;
+
+import net.fabricmc.loom.build.nesting.NestableJarGenerationTask;
 
 import java.io.File;
 import java.io.InputStreamReader;
@@ -43,7 +52,6 @@ import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-
 import javax.net.ssl.HttpsURLConnection;
 
 import org.gradle.api.DefaultTask;
@@ -78,6 +86,7 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 	private Configuration retrieveJson;
 	private Configuration resolvableImplementation;
 	private Configuration excludedFabricDeps;
+	private Configuration nest;
 	
 	/**
 	 * Applies the plugin to either a {@link Project} or {@link Settings}.
@@ -218,13 +227,25 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 	private void setupConfigurations(WWProjectContext context) {
 		Project project = context.getProject();
 		implementation = project.getConfigurations().getByName(ProjectDependencyType.implementation.name());
-		compileOnly = project.getConfigurations().getByName(ProjectDependencyType.compileOnly.name());
-		fabricDep = project.getConfigurations().create(ProjectDependencyType.fabricDep.name());
-		fabricImpl = project.getConfigurations().create(ProjectDependencyType.fabricImpl.name());
+		nest = project.getConfigurations().create(ProjectDependencyType.nest.name(), configuration -> {
+			configuration.setCanBeResolved(true);
+			configuration.setCanBeConsumed(false);
+			configuration.setTransitive(false);
+		});
+	    project.getConfigurations().getByName("compileClasspath").extendsFrom(nest);
+
+		
 		retrieveJson = project.getConfigurations().create(ProjectDependencyType.retrieveJson.name(), configuration -> {
 			configuration.setCanBeResolved(true);
 			configuration.setCanBeConsumed(false);
 		});
+		/*implementation = project.getConfigurations().getByName(ProjectDependencyType.implementation.name(), configuration -> {
+			configuration.extendsFrom(nest, retrieveJson);
+		});*/
+		compileOnly = project.getConfigurations().getByName(ProjectDependencyType.compileOnly.name());
+		fabricDep = project.getConfigurations().create(ProjectDependencyType.fabricDep.name());
+		fabricImpl = project.getConfigurations().create(ProjectDependencyType.fabricImpl.name());
+
 		
 		resolvableImplementation = project.getConfigurations().create(ProjectDependencyType.resolvableImplementation.name(), configuration -> {
 			configuration.extendsFrom(implementation);
@@ -241,10 +262,12 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		
 		DependencyHandler dependencies = project.getDependencies();
 		for(WWProjectDependency dependency : WWProjectDependency.values()) {
-			project.getLogger().log(LogLevel.INFO, "ADDING " + dependency.getModule() + ":" + dependency.getVersion() + " TO " + dependency.getType() + " CONFIGURATION");
-			dependencies.add(dependency.getType().name(), dependency.toString());
-			project.getLogger().log(LogLevel.INFO, "ADDING " + dependency.getModule() + ":" + dependency.getVersion() + " TO " + compileOnly + " CONFIGURATION");
-			dependencies.add(compileOnly.getName(), dependency.toString());
+			for(ProjectDependencyType type : dependency.getTypes()) {
+				project.getLogger().log(LogLevel.INFO, "ADDING " + dependency.getModule() + ":" + dependency.getVersion() + " TO " + type + " CONFIGURATION");
+				dependencies.add(type.name(), dependency.toString());
+				project.getLogger().log(LogLevel.INFO, "ADDING " + dependency.getModule() + ":" + dependency.getVersion() + " TO " + compileOnly + " CONFIGURATION");
+				dependencies.add(compileOnly.getName(), dependency.toString());
+			}
 		}
 		
 		project.getLogger().log(LogLevel.INFO, "ADDING JSON DEPENDENCIES " + VERSION);
@@ -424,6 +447,79 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			
 		});
 		
+		project.getTasks().register("generateLauncherMetadata", GenerateLauncherMetadataTask.class, task -> {
+			task.getOutputs().upToDateWhen(taskOutput -> false);
+			task.getOutputs().cacheIf(taskOutput -> false);
+		});
+		
+		/*
+		project.getTasks().named("jar").configure(jarTask -> {
+			
+
+			
+			jarTask.dependsOn("generateLauncherMetadata");
+			
+			jarTask.doFirst(task -> {
+				var genTask = project.getTasks().named("generateLauncherMetadata", GenerateLauncherMetadataTask.class).get();
+				for(File f : genTask.getOutputFiles().getFiles()) {
+					if (!f.exists()) {
+						throw new GradleException("Expected generated file " + f + ",  does not exist.");
+					}
+				}
+				
+			});
+			
+			Jar jar = (Jar) jarTask;
+			jar.from(project.getLayout().getProjectDirectory().file("gradle/libs.versions.toml"), spec -> spec.into("META-INF/"));
+			jar.from(project.getTasks().named("generateLauncherMetadata", GenerateLauncherMetadataTask.class).get().getOutputFiles(), copySpeck -> copySpeck.into("META-INF/"));
+		});
+		*/
+		
+		TaskProvider<NestableJarGenerationTask> genNestJars = project.getTasks().register("generateNestableJars", NestableJarGenerationTask.class, task -> {
+			task.from(nest);
+			task.getOutputDirectory().set(project.getLayout().getBuildDirectory().dir("nested-jars"));
+		});
+		
+		TaskProvider<JarJarTask> nestJarsTask = project.getTasks().register("nestJars", JarJarTask.class, task -> {
+			task.dependsOn(project.getTasks().named("jar"));
+			task.dependsOn(project.getTasks().named("generateNestableJars"));
+			
+			task.getMainJar().set(
+				project.getTasks().named("jar", Jar.class).flatMap(Jar::getArchiveFile)	
+			);
+			
+		    task.getNestedJars().from(project.provider(() -> {
+		        File outputDir = project.getTasks()
+		            .named("generateNestableJars", NestableJarGenerationTask.class)
+		            .get()
+		            .getOutputDirectory()
+		            .get()
+		            .getAsFile();
+		        return project.fileTree(outputDir).matching(spec -> spec.include("*.jar"));
+		    }));
+		});
+		
+		project.getTasks().named("assemble").configure(assemble -> assemble.dependsOn(nestJarsTask));
+		if(project.getPlugins().hasPlugin("eclipse")) {
+			project.getTasks().named("eclipseClasspath").configure(eclipse -> eclipse.dependsOn(genNestJars));
+		}
+		
+		project.getTasks().named("jar", Jar.class, jar -> {
+		    Provider<FileTree> nestedJars = project.provider(() -> {
+		        if (project.getGradle().getTaskGraph().hasTask(":publish")) {
+		            return project.fileTree(project.getLayout().getBuildDirectory().dir("nested-jars").get(), spec -> {
+		                spec.include("*.jar");
+		            });
+		        } else {
+		            return project.files().getAsFileTree(); // empty FileTree
+		        }
+		    });
+
+		    jar.from(nestedJars, copySpec -> {
+		        copySpec.into("META-INF/jars");
+		    });
+
+		});
 	}
 	
 	/**
@@ -455,7 +551,9 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			
 			
 			for(WWProjectDependency dependency : WWProjectDependency.values()) {
-				dependencyHandler.add(dependency.getType().toString(), dependency.toString());
+				for(ProjectDependencyType type : dependency.getTypes()) {
+					dependencyHandler.add(type.toString(), dependency.toString());
+				}
 			}
 		}));
 	}
@@ -471,12 +569,21 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 	@SuppressWarnings({ "unchecked"})
 	private void setupEclipsePlugin(WWProjectContext context) {
 		Project project = context.getProject();
-		WilderWorkspaceExtension extension = context.getWWExtension();
+		WilderWorkspaceExtension extension = context.getWWExtension();	
+		
+		if(project.getPlugins().hasPlugin("eclipse")) {
+			project.getTasks().register("addEclipseFabricJsonsToDevClasspath", AddToDevRuntimeClassPathTask.class, task -> {
+				task.setAddedDir(project.getRootDir().toPath().resolve("build").resolve("dev-runtime").toFile());
+
+			});
+		}
+		
 		project.afterEvaluate(proj -> {
 			if (project.getPlugins().hasPlugin("eclipse")) {
+
 				EclipseModel eclipseModel = proj.getExtensions().getByType(EclipseModel.class);
 				EclipseClasspath classpath = eclipseModel.getClasspath();
-				
+	            
 				classpath.file(xmlFileContent -> {
 					xmlFileContent.getWhenMerged().add((classPathMerged) -> {
 						Classpath c = (Classpath) classPathMerged;
@@ -484,6 +591,7 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 							project.getLogger().warn(entry.getClass().getCanonicalName());
 							if(entry instanceof Library) {
 								Library lib = (Library) entry;
+								
 								GameJars gameJar = GameJars.fromPathString(lib.getPath());
 								if(gameJar != null) {
 									project.getLogger().info("Found a game jar to add sources to: " + lib.getPath());

@@ -63,6 +63,11 @@ public enum ProjectDependencyType {
 	nest,
 	
 	/**
+	 * Jar in Jar dependency for a mod, recursively including its dependencies as Jar in Jar
+	 */
+	nestTransitive,
+	
+	/**
 	 * Special dependency type for the base game
 	 */
 	wildermyth

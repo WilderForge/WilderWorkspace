@@ -3,6 +3,7 @@ package com.wildermods.workspace;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
@@ -10,6 +11,7 @@ import org.gradle.api.file.FileTree;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.initialization.dsl.ScriptHandler;
 import org.gradle.api.logging.LogLevel;
+import org.gradle.api.plugins.JavaPlugin;
 import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Copy;
 import org.gradle.api.tasks.TaskProvider;
@@ -79,6 +81,10 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 	/** The version of the WilderWorkspace plugin. */
 	public static final String VERSION = "@workspaceVersion@";
 	
+	static {
+		JavaPlugin.class.arrayType();
+	}
+	
 	private Configuration implementation;
 	private Configuration compileOnly;
 	private Configuration fabricDep;
@@ -87,6 +93,7 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 	private Configuration resolvableImplementation;
 	private Configuration excludedFabricDeps;
 	private Configuration nest;
+	private Configuration nestTransitive;
 	
 	/**
 	 * Applies the plugin to either a {@link Project} or {@link Settings}.
@@ -232,7 +239,24 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			configuration.setCanBeConsumed(false);
 			configuration.setTransitive(false);
 		});
-		project.getConfigurations().getByName("compileClasspath").extendsFrom(nest);
+		nestTransitive = project.getConfigurations().create(ProjectDependencyType.nestTransitive.name(), configuration -> {
+			configuration.setCanBeResolved(true);
+			configuration.setCanBeConsumed(false);
+			configuration.setTransitive(true);
+			
+            // Lazily mirror nest's dependencies, but force them to transitive = false
+            configuration.withDependencies(deps -> {
+                for (Dependency dep : nest.getDependencies()) {
+                    Dependency copy = dep.copy();
+                    if(copy instanceof ModuleDependency) {
+                        ((ModuleDependency) copy).setTransitive(false);
+                    }
+                    deps.add(copy);
+                }
+            });
+		});
+
+		project.getConfigurations().getByName("compileClasspath").extendsFrom(nestTransitive);
 
 		
 		retrieveJson = project.getConfigurations().create(ProjectDependencyType.retrieveJson.name(), configuration -> {
@@ -476,7 +500,7 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		*/
 		
 		TaskProvider<NestableJarGenerationTask> genNestJars = project.getTasks().register("generateNestableJars", NestableJarGenerationTask.class, task -> {
-			task.from(nest);
+			task.from(nestTransitive);
 			task.getOutputDirectory().set(project.getLayout().getBuildDirectory().dir("nested-jars"));
 		});
 		

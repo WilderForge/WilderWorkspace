@@ -532,7 +532,8 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 				
 				project.copy(copySpec -> {
 					copySpec.from(project.zipTree(mainJarFile), spec -> {
-						spec.include("*fabric.mod.json");
+						spec.include("fabric.mod.json");
+						spec.rename(name -> "nested.fabric.mod.json");
 					});
 					copySpec.into(jsonOutputDir);
 				});
@@ -563,6 +564,12 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 
 			jar.from(nestedJars, copySpec -> {
 				copySpec.into("META-INF/jars");
+				copySpec.rename(name -> {
+					if(name.equals("nested.fabric.mod.json")) {
+						return "fabric.mod.json";
+					}
+					return name;
+				});
 			});
 
 		});

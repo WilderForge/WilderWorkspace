@@ -30,7 +30,7 @@ public class GenerateRunConfigurationTask extends DefaultTask {
                 <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="net.fabricmc.loader.impl.launch.knot.KnotClient"/>
                 <stringAttribute key="org.eclipse.jdt.launching.MODULE_NAME" value="%1$s"/>
                 <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="%1$s"/>
-                <stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Dmixin.debug=true -Dfabric.development=true"/>
+                <stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Dmixin.debug=true -Dfabric.development=true -Dfabric.addMods=${workspace_loc:%1$s}/build/nested-jars"/>
                 <stringAttribute key="org.eclipse.jdt.launching.WORKING_DIRECTORY" value="${workspace_loc:%1$s/bin}"/>
             </launchConfiguration>
             """;

@@ -502,6 +502,13 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		TaskProvider<NestableJarGenerationTask> genNestJars = project.getTasks().register("generateNestableJars", NestableJarGenerationTask.class, task -> {
 			task.from(nestTransitive);
 			task.getOutputDirectory().set(project.getLayout().getBuildDirectory().dir("nested-jars"));
+			
+			task.doFirst(t -> {
+				File outputDir = task.getOutputDirectory().get().getAsFile();
+				if (outputDir.exists()) {
+					project.delete(outputDir);
+				}
+			});
 		});
 		
 		TaskProvider<JarJarTask> nestJarsTask = project.getTasks().register("nestJars", JarJarTask.class, task -> {
@@ -551,6 +558,15 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		}
 		
 		project.getTasks().named("jar", Jar.class, jar -> {
+			jar.getOutputs().upToDateWhen(t -> false);
+			jar.doFirst(t -> {
+				File outputJar = jar.getArchiveFile().get().getAsFile();
+				if (outputJar.exists()) {
+					project.getLogger().lifecycle("Deleting existing jar: " + outputJar);
+					outputJar.delete();
+				}
+			});
+			
 			Provider<FileTree> nestedJars = project.provider(() -> {
 				if (project.getGradle().getTaskGraph().hasTask(":publish")) {
 					return project.fileTree(project.getLayout().getBuildDirectory().dir("nested-jars").get(), spec -> {

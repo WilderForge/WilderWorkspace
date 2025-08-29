@@ -244,16 +244,16 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			configuration.setCanBeConsumed(false);
 			configuration.setTransitive(true);
 			
-            // Lazily mirror nest's dependencies, but force them to transitive = false
-            configuration.withDependencies(deps -> {
-                for (Dependency dep : nest.getDependencies()) {
-                    Dependency copy = dep.copy();
-                    if(copy instanceof ModuleDependency) {
-                        ((ModuleDependency) copy).setTransitive(false);
-                    }
-                    deps.add(copy);
-                }
-            });
+			// Lazily mirror nest's dependencies, but force them to transitive = false
+			configuration.withDependencies(deps -> {
+				for (Dependency dep : nest.getDependencies()) {
+					Dependency copy = dep.copy();
+					if(copy instanceof ModuleDependency) {
+						((ModuleDependency) copy).setTransitive(false);
+					}
+					deps.add(copy);
+				}
+			});
 		});
 
 		project.getConfigurations().getByName("compileClasspath").extendsFrom(nestTransitive);

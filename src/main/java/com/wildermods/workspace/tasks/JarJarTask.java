@@ -34,6 +34,10 @@ public abstract class JarJarTask extends DefaultTask {
 			getLogger().info("No jars to nest");
 		}
 		
+		for(File file : nestedJars) {
+			getLogger().info("Will attempt to nest " + file + " into " + getMainJar().get().getAsFile());
+		}
+		
 		JarNester.nestJars(nestedJars, main, getLogger());
 		
 		getLogger().lifecycle("Nested " + nestedJars.size());

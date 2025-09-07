@@ -7,10 +7,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
-import org.gradle.api.Task;
-
-import com.wildermods.workspace.util.GradlePrintStreamLogger;
-
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
 import net.fabricmc.loom.util.IOStringConsumer;
 
@@ -25,10 +21,6 @@ public class DecompilerBuilder {
 	private Map<String, String> options = new HashMap<>();
 	
 	public DecompilerBuilder() {}
-	
-	public DecompilerBuilder(Task task) {
-		setLogger(new GradlePrintStreamLogger(task));
-	}
 	
 	public DecompilerBuilder setThreadCount(int threadCount) {
 		if(threadCount > 0 && threadCount <= Runtime.getRuntime().availableProcessors()) {

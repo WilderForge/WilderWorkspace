@@ -16,6 +16,7 @@ import org.gradle.api.tasks.TaskAction;
 
 import com.wildermods.workspace.GameJars;
 import com.wildermods.workspace.decomp.DecompilerBuilder;
+import com.wildermods.workspace.decomp.GradleDecompilerBuilder;
 import com.wildermods.workspace.decomp.WilderWorkspaceDecompiler;
 import com.wildermods.workspace.util.FileHelper;
 
@@ -34,7 +35,7 @@ public class DecompileJarsTask extends DefaultTask {
 	public void decompile() throws IOException {
 
 		Path compiledDir = Path.of(this.compiledDir);
-		DecompilerBuilder b = new DecompilerBuilder(this);
+		DecompilerBuilder b = new GradleDecompilerBuilder(this);
 		b.setDecompDest(Path.of(decompDir));
 		HashMap<String, Path> compiledJars = new HashMap<String, Path>();
 		HashMap<String, Path> decompiledJarDests = new HashMap<String, Path>();

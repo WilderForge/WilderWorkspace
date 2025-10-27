@@ -141,7 +141,7 @@ public class WildermythDecompilerSetup {
      */
 	private void remap(Path linemap, Path jarToRemap, Path remappedJarDest) throws Throwable {
 		System.out.println("Remapping " + jarToRemap + " to " + remappedJarDest);
-		ClassLineNumbers lineNumbers = ClassLineNumbers.readMappings(linemap);
+		ClassLineNumbers lineNumbers = ClassLineNumbers.readMappings(Files.newBufferedReader(linemap));
 		LineNumberRemapper remapper = new LineNumberRemapper(lineNumbers);
 		if(Files.notExists(remappedJarDest)) {
 			Files.createDirectories(remappedJarDest.getParent());

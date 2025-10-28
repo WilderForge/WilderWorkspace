@@ -502,11 +502,13 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		TaskProvider<NestableJarGenerationTask> genNestJars = project.getTasks().register("generateNestableJars", NestableJarGenerationTask.class, task -> {
 			task.from(nestTransitive);
 			task.getOutputDirectory().set(project.getLayout().getBuildDirectory().dir("nested-jars"));
+			task.getOutputs().upToDateWhen(t -> false);
 			
 			task.doFirst(t -> {
 				File outputDir = task.getOutputDirectory().get().getAsFile();
 				if (outputDir.exists()) {
 					project.delete(outputDir);
+					project.mkdir(outputDir);
 				}
 			});
 		});

@@ -8,6 +8,7 @@ public enum GameJars {
 	devvotes(FileHelper.libDir, "devvotes-client.jar"),
 	gameEngine(FileHelper.libDir, "gameEngine-1.0.jar"),
 	server_1_0(FileHelper.libDir, "server-1.0.jar"),
+	libgdx_1_11(FileHelper.libDir, "gdx-1.11.0.jar"),
 	scratchpad("scratchpad.jar"),
 	wildermyth("wildermyth.jar"),
 	

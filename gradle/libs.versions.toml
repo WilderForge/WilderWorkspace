@@ -12,6 +12,7 @@ provider_version = "1.11.0.2"
 log4j_version = "2.25.2"
 thrixlvault_version = "0.7.1.0"
 vineflower_version = "1.11.1"
+libgdx_version = "1.11.0"
 
 
 
@@ -23,6 +24,8 @@ fabric-loom = { module = "net.fabricmc:fabric-loom", version.ref = "fabric_loom_
 vineflower = { module = "org.vineflower:vineflower", version.ref = "vineflower_version"}
 gson = { module = "com.google.code.gson:gson", version.ref = "gson_version"}
 thrixlvault = { module = "com.wildermods:thrixlvault", version.ref = "thrixlvault_version"}
+
+libgdx = { module = "com.badlogic.gdx:gdx", version.ref = "libgdx_version"}
 
 fabric-loader = { module = "com.wildermods:fabric-loader", version.ref = "fabric_loader_version" }
 provider = { module = "com.wildermods:provider", version.ref = "provider_version" }

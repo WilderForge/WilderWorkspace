@@ -22,6 +22,8 @@ def replacementTokens = [
     gsonVersion: libs.versions.gson.version.get(),
     thrixlvaultVersion: libs.versions.thrixlvault.version.get(),
     
+    gdxVersion: libs.versions.libgdx.version.get(),
+    
     //transitive dependencies
     log4jVersion: libs.versions.log4j.version.get()
 ]

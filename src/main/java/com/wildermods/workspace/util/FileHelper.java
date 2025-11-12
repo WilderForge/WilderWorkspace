@@ -44,7 +44,6 @@ public class FileHelper {
 				case "devvotes-client.jar":
 				case "gameEngine-1.0.jar":
 				case "server-1.0.jar":
-				case "gdx-1.11.0.jar":
 				case "scratchpad.jar":
 				case "wildermyth.jar":
 					return true;

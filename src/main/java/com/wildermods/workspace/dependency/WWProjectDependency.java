@@ -52,8 +52,7 @@ public enum WWProjectDependency {
 		log4jAPI("org.apache.logging.log4j", "log4j-api", "@log4jVersion@", fabricDep),
 		log4jSLF4J("org.apache.logging.log4j", "log4j-slf4j2-impl", "@log4jVersion@", fabricDep),
 		vineflower("org.vineflower", "vineflower", "@vineFlowerVersion@", fabricDep),
-		
-		gdx("com.badlogicgames.gdx", "gdx", "@gdxVersion@", compileOnly)
+
 	;
 
 	private final ProjectDependencyType[] types;

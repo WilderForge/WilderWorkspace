@@ -190,6 +190,9 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			});
 			MavenArtifactRepository mavenCentral = buildscript.getRepositories().mavenCentral();
 			MavenArtifactRepository mavenLocal = buildscript.getRepositories().mavenLocal();
+			MavenArtifactRepository sonatypeSnapshot = buildscript.getRepositories().maven((c) -> {
+				c.setUrl("https://central.sonatype.com/repository/maven-snapshots/");
+			});
 			
 			DependencyHandler dependencies = buildscript.getDependencies();
 			for(PluginDependency dependency : PluginDependency.values()) {
@@ -220,6 +223,9 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		}));
 		repositories.add(repositories.maven((repo) -> {
 			repo.setUrl("https://maven.wildermods.com/");
+		}));
+		repositories.add(repositories.maven((repo) -> {
+			repo.setUrl("https://central.sonatype.com/repository/maven-snapshots/");
 		}));
 	}
 	

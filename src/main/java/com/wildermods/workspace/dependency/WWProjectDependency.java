@@ -51,7 +51,7 @@ public enum WWProjectDependency {
 		log4jCore("org.apache.logging.log4j", "log4j-core", "@log4jVersion@", fabricDep),
 		log4jAPI("org.apache.logging.log4j", "log4j-api", "@log4jVersion@", fabricDep),
 		log4jSLF4J("org.apache.logging.log4j", "log4j-slf4j2-impl", "@log4jVersion@", fabricDep),
-		vineflower("org.vineflower", "vineflower", "@vineFlowerVersion@", fabricDep),
+		vineflower("org.vineflower", "vineflower", "@vineFlowerVersion@", "slim", null, fabricDep),
 
 	;
 
@@ -60,6 +60,7 @@ public enum WWProjectDependency {
 	private final String artifact;
 	private final String version;
 	private final String dependencyString;
+	private final String classifier;
 	private final URI gitRepo;
 	private String reason;
 
@@ -72,7 +73,7 @@ public enum WWProjectDependency {
 	 * @param version the version of the dependency
 	 */
 	private WWProjectDependency(String groupID, String artifact, String version, ProjectDependencyType... types) {
-		this(groupID, artifact, version, null, types);
+		this(groupID, artifact, version, null, null, types);
 	}
 	
 	/**
@@ -82,14 +83,21 @@ public enum WWProjectDependency {
 	 * @param groupID the group ID of the dependency
 	 * @param artifact the artifact ID of the dependency
 	 * @param version the version of the dependency
+	 * @param classifier the classifier of the dependency
 	 * @param gitRepo the URL of the Git repository associated with the dependency, or {@code null} if not applicable
 	 */
-	private WWProjectDependency(String groupID, String artifact, String version, String gitRepo, ProjectDependencyType... types) {
+	private WWProjectDependency(String groupID, String artifact, String version, String classifier, String gitRepo, ProjectDependencyType... types) {
 		this.types = types;
 		this.groupID = groupID;
 		this.artifact = artifact;
 		this.version = version;
-		this.dependencyString = String.join(":", groupID, artifact, version);
+		this.classifier = classifier;
+		if(classifier == null) {
+			this.dependencyString = String.join(":", groupID, artifact, version);
+		}
+		else {
+			this.dependencyString = String.join(":", groupID, artifact, version, classifier);
+		}
 		try {
 			if(gitRepo != null) {
 				this.gitRepo = new URI(gitRepo);
@@ -143,6 +151,10 @@ public enum WWProjectDependency {
 
 	public String getReason() {
 		return reason;
+	}
+	
+	public String getClassifier() {
+		return classifier;
 	}
 	
 	/**

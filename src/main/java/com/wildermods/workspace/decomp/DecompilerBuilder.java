@@ -7,6 +7,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
+import org.jetbrains.java.decompiler.main.extern.IFernflowerLogger;
+
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
 import net.fabricmc.loom.util.IOStringConsumer;
 
@@ -49,7 +51,7 @@ public class DecompilerBuilder {
 		return this;
 	}
 	
-	public DecompilerBuilder setLogger(IOStringConsumer logger) {
+	public <Logger extends IFernflowerLogger & IOStringConsumer> DecompilerBuilder setLogger(Logger logger) {
 		this.logger = logger;
 		return this;
 	}

@@ -4,10 +4,9 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import org.jetbrains.java.decompiler.main.Fernflower;
+import org.jetbrains.java.decompiler.main.extern.IFernflowerLogger;
 import org.jetbrains.java.decompiler.main.extern.IFernflowerPreferences;
 import org.jetbrains.java.decompiler.main.extern.IResultSaver;
-
-import com.wildermods.workspace.util.GradlePrintStreamLogger;
 
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
 
@@ -40,7 +39,7 @@ public class WilderWorkspaceDecompiler {
 				() -> builder.getDecompDest(), 
 				() -> builder.getLinemapDest()
 			);
-		ff = new Fernflower(saver, options, (GradlePrintStreamLogger)metaData.logger());
+		ff = new Fernflower(saver, options, (IFernflowerLogger) metaData.logger());
 		
 		for(Path library : metaData.libraries()) {
 			ff.addLibrary(library.toFile());

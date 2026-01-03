@@ -22,13 +22,16 @@ println(repositories)
 
 version = workspaceVersion
 group = "com.wildermods"
-archivesBaseName = "workspace"
+base.archivesName = "workspace"
 
 apply from: 'replaceTokenScript.gradle'
 apply from: 'publishScript.gradle'
 
-sourceCompatibility = '21'
-targetCompatibility = '21'
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(21)
+	}
+}
 
 //dependencies are defined in [project root]/gradle/deps.versions.toml
 dependencies {

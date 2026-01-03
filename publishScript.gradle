@@ -3,6 +3,8 @@
 
 ext.mavenLocalUrl = repositories.mavenLocal().url.toString()
 
+def archiveName = project.base.archivesName.get()
+
 tasks.register('checkArtifactExists') {
     doLast {
 		// Skip this task if --force is present
@@ -12,7 +14,7 @@ tasks.register('checkArtifactExists') {
 		}
 		
         def repoUrl = project.hasProperty('mavenRepoUrl') ? project.mavenRepoUrl : mavenLocalUrl
-        def projectGroup = "${project.group}.${project.archivesBaseName}"
+        def projectGroup = "${project.group}.${archiveName}"
         def gradleGroup = "${projectGroup}.gradle.plugin"
         def artifactPath = "${repoUrl}/${projectGroup.replace('.', '/')}/${gradleGroup}/${project.version}/${gradleGroup}-${project.version}.jar"
         logger.lifecycle("Checking if artifact exists at: $artifactPath")

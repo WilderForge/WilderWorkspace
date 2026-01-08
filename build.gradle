@@ -36,11 +36,11 @@ java {
 //dependencies are defined in [project root]/gradle/deps.versions.toml
 dependencies {
     gradleApi()
-    implementation libs.commons.lang
-    implementation libs.commons.text
-    implementation libs.commons.io
-    implementation libs.fabric.loom
-    implementation(variantOf(libs.vineflower) { classifier("slim") })
-    implementation libs.gson
-    implementation libs.thrixlvault
+    api libs.commons.lang
+    api libs.commons.text
+    api libs.commons.io
+    api libs.fabric.loom
+    api(variantOf(libs.vineflower) { classifier("slim") })
+    api libs.gson
+    api libs.thrixlvault
 }

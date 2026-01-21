@@ -10,7 +10,7 @@ gson_version = "2.13.2"
 mixin_version = "0.16.3+mixin.0.8.7"
 provider_version = "1.13.0.0"
 log4j_version = "2.25.3"
-thrixlvault_version = "0.11.1.0"
+thrixlvault_version = "0.12.0.0"
 vineflower_version = "1.12.0-20251117.220607-62"
 libgdx_version = "1.11.0"
 

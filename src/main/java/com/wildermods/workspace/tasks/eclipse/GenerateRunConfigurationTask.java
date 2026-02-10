@@ -1,6 +1,7 @@
 package com.wildermods.workspace.tasks.eclipse;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -12,7 +13,12 @@ import org.gradle.api.tasks.TaskAction;
 
 public class GenerateRunConfigurationTask extends DefaultTask {
 
-    private static final String LAUNCH_CONTENT_TEMPLATE = 
+	private static final Path NESTED_JARS = Path.of("build").resolve("nested-jars");
+	private static final Path PROCESSED_JARS = Path.of("bin").resolve(".wilderworkspace").resolve("processedMods");
+	
+    private static final String LAUNCH_CONTENT_TEMPLATE;
+    static { 
+    	String xml =
             """
             <?xml version="1.0" encoding="UTF-8" standalone="no"?>
             <launchConfiguration type="org.eclipse.jdt.launching.localJavaApplication">
@@ -30,11 +36,15 @@ public class GenerateRunConfigurationTask extends DefaultTask {
                 <stringAttribute key="org.eclipse.jdt.launching.MAIN_TYPE" value="net.fabricmc.loader.impl.launch.knot.KnotClient"/>
                 <stringAttribute key="org.eclipse.jdt.launching.MODULE_NAME" value="%1$s"/>
                 <stringAttribute key="org.eclipse.jdt.launching.PROJECT_ATTR" value="%1$s"/>
-                <stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Dmixin.debug=true -Dfabric.development=true -Dfabric.addMods=${workspace_loc:%1$s}/build/nested-jars"/>
+                <stringAttribute key="org.eclipse.jdt.launching.VM_ARGUMENTS" value="-Dmixin.debug=true -Dfabric.development=true -Dfabric.addMods=${workspace_loc:%1$s}[NESTED_JARS][PATH_SEPARATOR]${workspace_loc:%1$s}[PROCESSED_JARS]"/>
                 <stringAttribute key="org.eclipse.jdt.launching.WORKING_DIRECTORY" value="${workspace_loc:%1$s/bin}"/>
             </launchConfiguration>
             """;
-    
+    	xml = xml.replace("[NESTED_JARS]", File.separator + NESTED_JARS.toString());
+    	xml = xml.replace("[PATH_SEPARATOR]", File.pathSeparator);
+    	xml = xml.replace("[PROCESSED_JARS]", File.separator + PROCESSED_JARS.toString());
+    	LAUNCH_CONTENT_TEMPLATE = xml;
+    }
     public @Input boolean overwrite = false;
     
     public boolean getOverwrite() {

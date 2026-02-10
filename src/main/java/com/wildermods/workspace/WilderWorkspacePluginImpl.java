@@ -473,6 +473,10 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			task.into(Path.of(extension.getGameDestDir()).resolve("modDeps"));
 		});
 		
+		project.getTasks().register("regenEclipseRuns", GenerateRunConfigurationTask.class, task -> {
+			task.overwrite = true;
+		});
+		
 		project.getTasks().register("genEclipseRuns", GenerateRunConfigurationTask.class, task -> {
 			
 		});

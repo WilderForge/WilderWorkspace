@@ -543,8 +543,6 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 				File jsonOutputDir = project.getLayout().getBuildDirectory().dir("nested-jars").get().getAsFile();
 				File mainJarFile = task.getMainJar().get().getAsFile();
 				
-				project.getLogger().info("EXISTSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSSS: " + mainJarFile.exists());
-				
 				project.copy(copySpec -> {
 					copySpec.from(project.zipTree(mainJarFile), spec -> {
 						spec.include("fabric.mod.json");

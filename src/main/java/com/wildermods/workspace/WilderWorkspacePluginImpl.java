@@ -37,6 +37,7 @@ import com.wildermods.workspace.tasks.AddToDevRuntimeClassPathTask;
 import com.wildermods.workspace.tasks.ClearLocalRuntimeTask;
 import com.wildermods.workspace.tasks.CopyLocalDependenciesToWorkspaceTask;
 import com.wildermods.workspace.tasks.DecompileJarsTask;
+import com.wildermods.workspace.tasks.GenNestedMetadataJarsTask;
 import com.wildermods.workspace.tasks.GenerateLauncherMetadataTask;
 import com.wildermods.workspace.tasks.JarJarTask;
 import com.wildermods.workspace.tasks.eclipse.GenerateRunConfigurationTask;
@@ -508,6 +509,14 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			jar.from(project.getTasks().named("generateLauncherMetadata", GenerateLauncherMetadataTask.class).get().getOutputFiles(), copySpeck -> copySpeck.into("META-INF/"));
 		});
 		*/
+		
+		project.getTasks().register("prepareDevLaunch", GenNestedMetadataJarsTask.class, task -> {
+			task.getOutputs().upToDateWhen(taskOutput -> false);
+			task.getOutputs().cacheIf(taskOutput -> false);
+			task.getOutputDir().set(
+				project.getProjectDir().toPath().resolve("bin").resolve(".wilderworkspace").resolve("processedMods").toFile()
+			);
+		});
 		
 		TaskProvider<NestableJarGenerationTask> genNestJars = project.getTasks().register("generateNestableJars", NestableJarGenerationTask.class, task -> {
 			task.from(nestTransitive);

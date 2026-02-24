@@ -47,6 +47,21 @@ public enum ProjectDependencyType {
 	excludedFabricDeps,
 	
 	/**
+	 * Contains non-transitive subdependencies. These subdependencies are needed only at compile time, as
+	 * they will be included at runtime.
+	 * 
+	 * For example, fabric loader has mixinExtras as a transitive dependency. MixinExtras is automatically included
+	 * at runtime by extracting it from fabric-loader's jar via JarInJar.
+	 * 
+	 * At compile time, however, it is unavailable as it's nested inside of fabric-loader
+	 * 
+	 * To ensire mixinExtras is included at compile time, fabric-loader should be declared:
+	 * 
+	 * retrieveJson libs.fabric-loader
+	 */
+	retrieveJson,
+	
+	/**
 	 * A non-transitive subdependency of a dependency. These dependencies are needed only at compile time, as
 	 * they will be included by other dependencies at runtime.
 	 * 
@@ -55,15 +70,15 @@ public enum ProjectDependencyType {
 	 * 
 	 * At compile time, however, it is unavailable as it's nested inside of fabric-loader
 	 */
-	retrieveJson,
+	jsonDependency,
 	
 	/**
-	 * Jar in Jar dependency for a mod
+	 * Jar in Jar dependency to include in this mod
 	 */
 	nest,
 	
 	/**
-	 * Jar in Jar dependency for a mod, recursively including its dependencies as Jar in Jar
+	 * Jar in Jar dependency to include in this mod, recursively including its `nest` dependencies as Jar in Jar
 	 */
 	nestTransitive,
 	

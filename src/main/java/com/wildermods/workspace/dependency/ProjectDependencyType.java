@@ -13,6 +13,21 @@ public enum ProjectDependencyType {
 	compileOnly,
 	
 	/**
+	 * normal gradle compileClasspath configuration
+	 * 
+	 * @Deprecated Shouldn't be added to directly
+	 */
+	@Deprecated
+	compileClasspath,
+	
+	/**
+	 * normal gradle testCompileClasspath configuration
+	 * 
+	 * @deprecated Shouldn't be added to directly
+	 */
+	testCompileClasspath,
+	
+	/**
 	 * normal gradle implementation dependencies
 	 */
 	implementation,
@@ -55,7 +70,7 @@ public enum ProjectDependencyType {
 	 * 
 	 * At compile time, however, it is unavailable as it's nested inside of fabric-loader
 	 * 
-	 * To ensire mixinExtras is included at compile time, fabric-loader should be declared:
+	 * To ensure mixinExtras is included at compile time, fabric-loader should be declared:
 	 * 
 	 * retrieveJson libs.fabric-loader
 	 */

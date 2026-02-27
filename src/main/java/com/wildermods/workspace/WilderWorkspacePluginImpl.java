@@ -52,7 +52,6 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import javax.net.ssl.HttpsURLConnection;
@@ -88,6 +87,8 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 	
 	private Configuration implementation;
 	private Configuration compileOnly;
+	private Configuration compileClasspath;
+	private Configuration testCompileClasspath;
 	private Configuration fabricDep;
 	private Configuration fabricImpl;
 	private Configuration retrieveJson;
@@ -144,6 +145,14 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			setupTasks(context);
 			
 			setupPostEvaluations(context);
+			
+			try {
+				addJsonDependencies(context);
+			}
+			catch(Throwable t) {
+				project.getLogger().error("Could not retrieve json dependencies. Build may fail or strange behavior may occur. 'dependencies' task will be incorrect.", t);
+				jsonDependencies.getAllDependencies().clear();
+			}
 		}
 		catch(Throwable t) {
 			project.getLogger().log(LogLevel.ERROR, t.getMessage(), t);
@@ -263,29 +272,37 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 				}
 			});
 		});
-
-		project.getConfigurations().getByName("compileClasspath").extendsFrom(nestTransitive);
-
 		
 		retrieveJson = project.getConfigurations().create(ProjectDependencyType.retrieveJson.name(), configuration -> {
 			configuration.setCanBeResolved(true);
-			configuration.setCanBeConsumed(false);
 		});
 		
 		jsonDependencies = project.getConfigurations().create(ProjectDependencyType.jsonDependency.name(), config -> {
-			config.setCanBeResolved(false);
-			config.setCanBeConsumed(false);
+			config.setCanBeResolved(true);
+			config.setCanBeConsumed(true);
 		});
 		
-		compileOnly = project.getConfigurations().getByName(ProjectDependencyType.compileOnly.name());
 		fabricDep = project.getConfigurations().create(ProjectDependencyType.fabricDep.name());
 		fabricImpl = project.getConfigurations().create(ProjectDependencyType.fabricImpl.name());
-
+		fabricImpl.setCanBeResolved(true);
+		
+		compileOnly = project.getConfigurations().getByName(ProjectDependencyType.compileOnly.name());
+		
+		compileClasspath = project.getConfigurations().getByName(ProjectDependencyType.compileClasspath.name());
+		compileClasspath.extendsFrom(nestTransitive);
+		compileClasspath.extendsFrom(fabricDep);
+		compileClasspath.extendsFrom(fabricImpl);
+		compileClasspath.extendsFrom(retrieveJson);
+		compileClasspath.extendsFrom(jsonDependencies);
+		//compileClasspath.extendsFrom(compileOnly);
+		
+		testCompileClasspath = project.getConfigurations().getByName(ProjectDependencyType.testCompileClasspath.name());
+		testCompileClasspath.extendsFrom(compileClasspath);
 		
 		resolvableImplementation = project.getConfigurations().create(ProjectDependencyType.resolvableImplementation.name(), configuration -> {
 			configuration.extendsFrom(implementation);
 			configuration.setCanBeResolved(true);
-			configuration.setCanBeConsumed(false);
+			configuration.setCanBeConsumed(true);
 		});
 		resolvableImplementation.extendsFrom(jsonDependencies);
 		
@@ -293,7 +310,7 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			configuration.extendsFrom(project.getConfigurations().getByName(ProjectDependencyType.fabricDep.name()));
 			configuration.extendsFrom(project.getConfigurations().getByName(ProjectDependencyType.fabricImpl.name()));
 			configuration.setCanBeResolved(true);
-			configuration.setCanBeConsumed(false);
+			configuration.setCanBeConsumed(true);
 		});
 		
 		DependencyHandler dependencies = project.getDependencies();
@@ -301,8 +318,8 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			for(ProjectDependencyType type : dependency.getTypes()) {
 				project.getLogger().log(LogLevel.INFO, "ADDING " + dependency.getModule() + ":" + dependency.getVersion() + " TO " + type + " CONFIGURATION");
 				dependencies.add(type.name(), dependency.toString());
-				project.getLogger().log(LogLevel.INFO, "ADDING " + dependency.getModule() + ":" + dependency.getVersion() + " TO " + compileOnly + " CONFIGURATION");
-				dependencies.add(compileOnly.getName(), dependency.toString());
+				//project.getLogger().log(LogLevel.INFO, "ADDING " + dependency.getModule() + ":" + dependency.getVersion() + " TO " + compileClasspath + " CONFIGURATION");
+				//dependencies.add(compileClasspath.getName(), dependency.toString());
 			}
 		}
 	}
@@ -336,8 +353,6 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			task.setDestDir(extension.getGameDestDir());
 			task.setPlatform(extension.getPlatform());
 			task.setSteamUser(extension.getSteamUser());
-			//task.finalizedBy(project.getTasks().getByName("copyFabricDependencies"));
-			//task.finalizedBy(project.getTasks().getByName("copyFabricImplementors"));
 			task.finalizedBy(project.getTasks().getByName("copyProjectDependencies"));
 			task.getOutputs().cacheIf(t -> false);
 			task.getOutputs().upToDateWhen(t -> false);
@@ -354,6 +369,9 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		});
 		
 		project.getTasks().register("setupDecompWorkspace", DefaultTask.class, task -> {
+			task.getOutputs().upToDateWhen(taskOutput -> false);
+			task.getOutputs().cacheIf(taskOutput -> false);
+			
 			task.dependsOn(project.getTasks().getByName("copyLocalDependenciesToWorkspace"));
 			task.dependsOn(project.provider(() -> {
 				DecompileJarsTask decompileTask = (DecompileJarsTask)project.getTasks().named("decompileJars").get();
@@ -392,50 +410,6 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		});
 		*/
 		
-		project.getTasks().register("resolveJsonDependencies", task -> {
-			// Input is the retrieveJson configuration
-			task.getInputs().files(retrieveJson);
-
-			task.doLast(t -> {
-				DependencyHandler dependencies = project.getDependencies();
-
-				for (Dependency jsonDep : retrieveJson.getAllDependencies()) {
-					try {
-						// Construct path inside jar to JSON file
-						String jsonPath = jsonDep.getGroup().replace('.', '/') + "/" +
-								jsonDep.getName() + "/" + jsonDep.getVersion() + "/" +
-								jsonDep.getName() + "-" + jsonDep.getVersion() + ".json";
-
-						Optional<MavenArtifactRepository> repoOpt = project.getRepositories()
-								.withType(MavenArtifactRepository.class)
-								.stream()
-								.filter(repo -> canResolveUrl(context, repo.getUrl().toString() + jsonPath))
-								.findFirst();
-
-						if (!repoOpt.isPresent()) {
-							throw new RuntimeException("Cannot locate JSON dependency for: " + jsonDep);
-						}
-
-						MavenArtifactRepository repo = repoOpt.get();
-						String jsonUrl = repo.getUrl().toString() + jsonPath;
-
-						InputStreamReader reader = new InputStreamReader(new URL(jsonUrl).openStream());
-						JsonObject jsonData = JsonParser.parseReader(reader).getAsJsonObject();
-						JsonObject libraries = jsonData.getAsJsonObject("libraries");
-
-						for (var entry : libraries.entrySet()) {
-							if (entry.getValue().isJsonArray()) {
-								addDependenciesToConfiguration(project, jsonDep, entry.getValue().getAsJsonArray(), jsonDependencies);
-							}
-						}
-
-					} catch (Exception e) {
-						throw new RuntimeException("Failed to process JSON dependency: " + jsonDep, e);
-					}
-				}
-			});
-		});
-		
 		project.getTasks().register("copyFabricDependencies", Copy.class, task -> {
 			task.from(fabricDep);
 			task.into(Path.of(extension.getGameDestDir()).resolve("fabric"));
@@ -472,29 +446,6 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			task.getOutputs().upToDateWhen(taskOutput -> false);
 			task.getOutputs().cacheIf(taskOutput -> false);
 		});
-		
-		/*
-		project.getTasks().named("jar").configure(jarTask -> {
-			
-
-			
-			jarTask.dependsOn("generateLauncherMetadata");
-			
-			jarTask.doFirst(task -> {
-				var genTask = project.getTasks().named("generateLauncherMetadata", GenerateLauncherMetadataTask.class).get();
-				for(File f : genTask.getOutputFiles().getFiles()) {
-					if (!f.exists()) {
-						throw new GradleException("Expected generated file " + f + ",  does not exist.");
-					}
-				}
-				
-			});
-			
-			Jar jar = (Jar) jarTask;
-			jar.from(project.getLayout().getProjectDirectory().file("gradle/libs.versions.toml"), spec -> spec.into("META-INF/"));
-			jar.from(project.getTasks().named("generateLauncherMetadata", GenerateLauncherMetadataTask.class).get().getOutputFiles(), copySpeck -> copySpeck.into("META-INF/"));
-		});
-		*/
 		
 		project.getTasks().register("prepareDevLaunch", GenNestedMetadataJarsTask.class, task -> {
 			task.getOutputs().upToDateWhen(taskOutput -> false);
@@ -605,31 +556,8 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 	 * @param context the project context
 	 */
 	private void setupPostEvaluations(WWProjectContext context) {
-		addWorkspaceDependencies(context);
+
 		setupEclipsePlugin(context);
-	}
-	
-	/**
-	 * Adds workspace dependencies to the project after evaluation.
-	 * <p>
-	 * This method ensures that project dependencies are added to the correct configurations.
-	 * </p>
-	 *
-	 * @param context the project context
-	 */
-	private void addWorkspaceDependencies(WWProjectContext context) {
-		Project project = context.getProject();
-		project.afterEvaluate((proj -> {
-			DependencyHandler dependencyHandler = proj.getDependencies();
-			
-			
-			
-			for(WWProjectDependency dependency : WWProjectDependency.values()) {
-				for(ProjectDependencyType type : dependency.getTypes()) {
-					dependencyHandler.add(type.toString(), dependency.toString());
-				}
-			}
-		}));
 	}
 	
 	/**
@@ -684,6 +612,59 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 				project.getLogger().warn("Eclipse plugin is not applied. The eclipse source attachment will not be configured, and the eclipse run configurations will not be generated.");
 			}
 		});
+	}
+	
+	private void addJsonDependencies(WWProjectContext context) {
+		Project project = context.getProject();
+
+		RepositoryHandler repositories = project.getRepositories();
+
+		project.getLogger().log(LogLevel.INFO, "Searching for json dependencies...");
+		
+		// Iterate over dependencies in retrieveJson configuration
+		for (Dependency jsonDependency : retrieveJson.getAllDependencies()) {
+			project.getLogger().info("Found json dependency: " + jsonDependency);
+			// Construct the JSON file URL
+			String jsonUrlPath = jsonDependency.getGroup().replace('.', '/') + "/"
+					+ jsonDependency.getName() + "/" + jsonDependency.getVersion() + "/" 
+					+ jsonDependency.getName() + "-" + jsonDependency.getVersion() + ".json";
+			
+			repositories.withType(MavenArtifactRepository.class).stream()
+					.forEach((repository) -> {project.getLogger().log(LogLevel.INFO, "Found repository: " + repository.getUrl());});
+
+			Optional<MavenArtifactRepository> repositoryOpt = repositories.withType(MavenArtifactRepository.class).stream()
+					.filter(repo -> canResolveUrl(context, repo.getUrl().toString() + jsonUrlPath))
+					.findFirst();
+
+			if (!repositoryOpt.isPresent()) {
+				throw new RuntimeException("Unable to determine the repository URL for the JSON dependency: " 
+					+ jsonDependency.getGroup() + ":" + jsonDependency.getName() + ":" + jsonDependency.getVersion());
+			}
+
+			// Get the repository URL
+			MavenArtifactRepository repository = repositoryOpt.get();
+			String jsonUrl = repository.getUrl().toString() + jsonUrlPath;
+
+			try {
+				// Download and parse the JSON file
+				InputStreamReader reader = new InputStreamReader(new URL(jsonUrl).openStream());
+				JsonObject dependencyJsonData = JsonParser.parseReader(reader).getAsJsonObject();
+
+				JsonObject libraries = dependencyJsonData.getAsJsonObject("libraries");
+				libraries.entrySet().forEach((entry) -> {
+					if(entry.getValue().isJsonArray()) {
+						JsonArray dependencyGroup = entry.getValue().getAsJsonArray();
+						addDependenciesToConfiguration(project, jsonDependency, dependencyGroup, jsonDependencies);
+					}
+				});
+				
+			} catch (Exception e) {
+				throw new RuntimeException("Failed to process JSON dependency: " + jsonUrl, e);
+			}
+		}
+			
+		project.getLogger().log(LogLevel.INFO, "Found all json dependnecies");
+
 	}
 	
 	private boolean canResolveUrl(WWProjectContext context, String urlString) {

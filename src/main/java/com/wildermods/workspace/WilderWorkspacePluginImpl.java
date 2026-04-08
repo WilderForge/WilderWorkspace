@@ -18,6 +18,7 @@ import org.gradle.api.tasks.TaskProvider;
 import org.gradle.internal.classloader.VisitableURLClassLoader;
 import org.gradle.jvm.tasks.Jar;
 import org.gradle.plugins.ide.eclipse.EclipsePlugin;
+import org.gradle.plugins.ide.eclipse.model.AbstractClasspathEntry;
 import org.gradle.plugins.ide.eclipse.model.Classpath;
 import org.gradle.plugins.ide.eclipse.model.ClasspathEntry;
 import org.gradle.plugins.ide.eclipse.model.EclipseClasspath;
@@ -33,13 +34,13 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.wildermods.workspace.dependency.ProjectDependencyType;
 import com.wildermods.workspace.dependency.WWProjectDependency;
-import com.wildermods.workspace.tasks.AddToDevRuntimeClassPathTask;
 import com.wildermods.workspace.tasks.ClearLocalRuntimeTask;
 import com.wildermods.workspace.tasks.CopyLocalDependenciesToWorkspaceTask;
 import com.wildermods.workspace.tasks.DecompileJarsTask;
 import com.wildermods.workspace.tasks.GenNestedMetadataJarsTask;
 import com.wildermods.workspace.tasks.GenerateLauncherMetadataTask;
 import com.wildermods.workspace.tasks.JarJarTask;
+import com.wildermods.workspace.tasks.eclipse.AddToDevRuntimeClassPathTask;
 import com.wildermods.workspace.tasks.eclipse.GenerateRunConfigurationTask;
 import com.wildermods.workspace.util.ExceptionUtil;
 
@@ -52,8 +53,14 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+
 import javax.net.ssl.HttpsURLConnection;
 
 import org.gradle.api.DefaultTask;
@@ -91,7 +98,9 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 	private Configuration testCompileClasspath;
 	private Configuration fabricDep;
 	private Configuration fabricImpl;
+	private Configuration provider;
 	private Configuration retrieveJson;
+	private Configuration retrieveJsonProvider;
 	private Configuration jsonDependencies;
 	private Configuration resolvableImplementation;
 	private Configuration excludedFabricDeps;
@@ -277,6 +286,10 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			configuration.setCanBeResolved(true);
 		});
 		
+		retrieveJsonProvider = project.getConfigurations().create(ProjectDependencyType.retrieveJsonProvider.name(), configuration -> {
+			configuration.setCanBeConsumed(true);
+		});
+		
 		jsonDependencies = project.getConfigurations().create(ProjectDependencyType.jsonDependency.name(), config -> {
 			config.setCanBeResolved(true);
 			config.setCanBeConsumed(true);
@@ -288,10 +301,13 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		
 		compileOnly = project.getConfigurations().getByName(ProjectDependencyType.compileOnly.name());
 		
+		provider = project.getConfigurations().create(ProjectDependencyType.provider.name());
+		
 		compileClasspath = project.getConfigurations().getByName(ProjectDependencyType.compileClasspath.name());
 		compileClasspath.extendsFrom(nestTransitive);
 		compileClasspath.extendsFrom(fabricDep);
 		compileClasspath.extendsFrom(fabricImpl);
+		compileClasspath.extendsFrom(provider);
 		compileClasspath.extendsFrom(retrieveJson);
 		compileClasspath.extendsFrom(jsonDependencies);
 		//compileClasspath.extendsFrom(compileOnly);
@@ -436,6 +452,7 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		
 		project.getTasks().register("regenEclipseRuns", GenerateRunConfigurationTask.class, task -> {
 			task.overwrite = true;
+			task.dependsOn("eclipse");
 		});
 		
 		project.getTasks().register("genEclipseRuns", GenerateRunConfigurationTask.class, task -> {
@@ -573,12 +590,13 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		Project project = context.getProject();
 		WilderWorkspaceExtension extension = context.getWWExtension();	
 		
-		if(project.getPlugins().hasPlugin("eclipse")) {
+		/*
+		 if(project.getPlugins().hasPlugin("eclipse")) {
 			project.getTasks().register("addEclipseFabricJsonsToDevClasspath", AddToDevRuntimeClassPathTask.class, task -> {
 				task.setAddedDir(project.getRootDir().toPath().resolve("build").resolve("dev-runtime").toFile());
 
 			});
-		}
+		}*/
 		
 		project.afterEvaluate(proj -> {
 			if (project.getPlugins().hasPlugin("eclipse")) {
@@ -589,20 +607,75 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 				classpath.file(xmlFileContent -> {
 					xmlFileContent.getWhenMerged().add((classPathMerged) -> {
 						Classpath c = (Classpath) classPathMerged;
-						for (ClasspathEntry entry : c.getEntries()) {
-							project.getLogger().warn(entry.getClass().getCanonicalName());
-							if(entry instanceof Library) {
-								Library lib = (Library) entry;
-								
-								GameJars gameJar = GameJars.fromPathString(lib.getPath());
-								if(gameJar != null) {
-									project.getLogger().info("Found a game jar to add sources to: " + lib.getPath());
-									FileReference source = c.fileReference(Path.of(extension.getDecompDir()).resolve("decomp").resolve(gameJar.getJarName()).normalize().toAbsolutePath().toFile());
-									lib.setSourcePath(source);
-									project.getLogger().info("Setting sources of " + gameJar + " to " + source.getPath());
-								}
-							}
+						
+						Set<String> compilePaths = project.getConfigurations().getByName(ProjectDependencyType.compileOnly.name()).getResolvedConfiguration().getResolvedArtifacts().stream()
+								.map(a -> a.getFile().getAbsoluteFile().toPath().normalize().toString())
+								.collect(Collectors.toSet());
+						
+						Set<String> pPaths = new HashSet<>();
+						{
+							Set<String> providerPaths = project.getConfigurations()
+									.getByName(ProjectDependencyType.provider.name())
+									.getResolvedConfiguration().getResolvedArtifacts()
+									.stream()
+									.map(a -> a.getFile().getAbsoluteFile().toPath().normalize().toString())
+									.collect(Collectors.toSet());
+							
+							Set<String> jsonProviderPaths = project.getConfigurations()
+									.getByName(ProjectDependencyType.retrieveJsonProvider.name())
+									.getResolvedConfiguration().getResolvedArtifacts()
+									.stream()
+									.map(a -> a.getFile().getAbsoluteFile().toPath().normalize().toString())
+									.collect(Collectors.toSet());
+							
+							
+							pPaths.addAll(providerPaths);
+							pPaths.addAll(jsonProviderPaths);
 						}
+						List<String> knotClasspath = new ArrayList<>();
+						
+						Iterator<ClasspathEntry> it = (Iterator<ClasspathEntry>)(Object)c.getEntries().iterator();
+						String path = null;
+						while(it.hasNext()) {
+							ClasspathEntry cpe = it.next();
+							if(cpe instanceof AbstractClasspathEntry entry) {
+								path = Path.of(entry.getPath()).toAbsolutePath().normalize().toString();
+								boolean isProvider = false;
+								
+								project.getLogger().warn(entry.getClass().getCanonicalName());
+								if(entry instanceof Library lib) {
+	
+									
+									
+									GameJars gameJar = GameJars.fromPathString(lib.getPath());
+									if(gameJar != null) {
+										project.getLogger().info("Found a game jar to add sources to: " + lib.getPath());
+										FileReference source = c.fileReference(Path.of(extension.getDecompDir()).resolve("decomp").resolve(gameJar.getJarName()).normalize().toAbsolutePath().toFile());
+										lib.setSourcePath(source);
+										project.getLogger().info("Setting sources of " + gameJar + " to " + source.getPath());
+									}
+									
+									if(pPaths.contains(lib.getPath())) {
+										project.getLogger().info("Provider dependency found: " + path);
+										continue;
+									}
+									
+									if(compilePaths.contains(lib.getPath())) {
+										project.getLogger().info("Ignoring compile only dlependency: " + path);
+									}
+								}
+								knotClasspath.add(path);
+							}
+							
+							if(path != null) {
+								project.getLogger().info("Not a provider dependency: " + path);
+							}
+							it.remove();
+						}
+						
+						project.getExtensions().getExtraProperties()
+							.set("knotClasspath", String.join(File.pathSeparator, knotClasspath));
+						project.getLogger().info("Setting knot classpath to: " + knotClasspath);
 					});
 				});
 
@@ -621,8 +694,12 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 
 		project.getLogger().log(LogLevel.INFO, "Searching for json dependencies...");
 		
+		ArrayList<Dependency> dependencies = new ArrayList();
+		dependencies.addAll(retrieveJson.getAllDependencies());
+		dependencies.addAll(retrieveJsonProvider.getAllDependencies());
+		
 		// Iterate over dependencies in retrieveJson configuration
-		for (Dependency jsonDependency : retrieveJson.getAllDependencies()) {
+		for (Dependency jsonDependency : dependencies) {
 			project.getLogger().info("Found json dependency: " + jsonDependency);
 			// Construct the JSON file URL
 			String jsonUrlPath = jsonDependency.getGroup().replace('.', '/') + "/"
@@ -655,6 +732,9 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 					if(entry.getValue().isJsonArray()) {
 						JsonArray dependencyGroup = entry.getValue().getAsJsonArray();
 						addDependenciesToConfiguration(project, jsonDependency, dependencyGroup, jsonDependencies);
+						if(retrieveJsonProvider.getAllDependencies().contains(jsonDependency)) {
+							addDependenciesToConfiguration(project, jsonDependency, dependencyGroup, provider);
+						}
 					}
 				});
 				

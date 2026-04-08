@@ -36,22 +36,23 @@ import java.net.URISyntaxException;
  */
 public enum WWProjectDependency {
 	
-		asm("org.ow2.asm", "asm", "@asmVersion@", fabricImpl),
-		asmAnalysis("org.ow2.asm", "asm-analysis", "@asmVersion@", fabricImpl),
-		asmCommons("org.ow2.asm", "asm-commons", "@asmVersion@", fabricImpl),
-		asmTree("org.ow2.asm", "asm-tree", "@asmVersion@", fabricImpl),
-		asmUtil("org.ow2.asm", "asm-util", "@asmVersion@", fabricImpl),
-		fabricLoader("com.wildermods", "fabric-loader", "@fabricLoaderVersion@", fabricImpl, retrieveJson),
+		asm("org.ow2.asm", "asm", "@asmVersion@", fabricImpl, provider),
+		asmAnalysis("org.ow2.asm", "asm-analysis", "@asmVersion@", fabricImpl, provider),
+		asmCommons("org.ow2.asm", "asm-commons", "@asmVersion@", fabricImpl, provider),
+		asmTree("org.ow2.asm", "asm-tree", "@asmVersion@", fabricImpl, provider),
+		asmUtil("org.ow2.asm", "asm-util", "@asmVersion@", fabricImpl, provider),
+		fabricLoader("com.wildermods", "fabric-loader", "@fabricLoaderVersion@", fabricImpl, retrieveJson, provider, retrieveJsonProvider),
 		
-		mixin("net.fabricmc", "sponge-mixin", "@mixinVersion@", fabricImpl),
-		guava("com.google.guava", "guava", "@guavaVersion@", fabricImpl),
-		gson("com.google.code.gson", "gson", "@gsonVersion@", fabricImpl),
+		mixin("net.fabricmc", "sponge-mixin", "@mixinVersion@", fabricImpl, provider),
+		guava("com.google.guava", "guava", "@guavaVersion@", fabricImpl, provider),
+		gson("com.google.code.gson", "gson", "@gsonVersion@", fabricImpl, provider),
 		
-		gameProvider("com.wildermods", "provider", "@providerVersion@", fabricImpl),
-		log4jCore("org.apache.logging.log4j", "log4j-core", "@log4jVersion@", fabricDep),
-		log4jAPI("org.apache.logging.log4j", "log4j-api", "@log4jVersion@", fabricDep),
-		log4jSLF4J("org.apache.logging.log4j", "log4j-slf4j2-impl", "@log4jVersion@", fabricDep),
-		vineflower("org.vineflower", "vineflower", "@vineFlowerVersion@", fabricDep),
+		gameProvider("com.wildermods", "provider", "@providerVersion@", fabricImpl, provider),
+		log4jCore("org.apache.logging.log4j", "log4j-core", "@log4jVersion@", fabricDep, provider),
+		log4jAPI("org.apache.logging.log4j", "log4j-api", "@log4jVersion@", fabricDep, provider),
+		log4jSLF4J("org.apache.logging.log4j", "log4j-slf4j2-impl", "@log4jVersion@", fabricDep, provider),
+		commonsLang("org.apache.commons", "commons-lang3", "@commonsLangVersion@", fabricImpl, provider),
+		vineflower("org.vineflower", "vineflower", "@vineFlowerVersion@", fabricDep, provider),
 
 	;
 

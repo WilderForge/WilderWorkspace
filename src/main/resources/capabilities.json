@@ -1,0 +1,835 @@
+{
+	"org.jetbrains:annotations":[
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"annotations-.*\\.jar"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "^annotations-(.+?)\\.jar"
+				},
+				{
+					"type": "literal",
+					"value": "0.0.0+unknown"
+				}
+			]
+		},
+		{
+			"type": "maven",
+			"location": [
+				"com.intellij:annotations"
+			]
+		}
+	],
+	"com.github.twak:campskeleton":[
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"campskeleton-.*\\.jar"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "^campskeleton-?(.*?)\\.jar"
+				},
+				{
+					"type": "literal",
+					"value": "0.0.0+unknown"
+				}
+			]
+		}
+	],
+	"org.apache.commons:commons-collections4": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"commons-collections.*\\.jar"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "^commons-collections-?(.*?)\\.jar"
+				},
+				{
+					"type": "literal",
+					"value": "0.0.0+unknown"
+				}
+			]
+		},
+		{
+			"type": "maven",
+			"location": [
+				"commons-collections:commons-collections"
+			]	
+		}
+	],
+	"commons-io:commons-io": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"commons-io.*\\.jar"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "^commons-io-?(.*?)\\.jar"
+				},
+				{
+					"type": "literal",
+					"value": "0.0.0+unknown"
+				}
+			]
+		}
+	],
+	"org.apache.commons:commons-math4-core": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"commons-math.*\\.jar"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "^commons-math4-core(?:\\d*)-?(.*?)\\.jar"
+				},
+				{
+					"type": "derived",
+					"value": "^commons-math(?:\\d*)-?(.*?)\\.jar"
+				},
+				{
+					"type": "literal",
+					"value": "0.0.0+unknown"
+				}
+			]
+		},
+		{
+			"type": "maven",
+			"location": [
+				"org.apache.commons:commons-math",
+				"org.apache.commons:commons-math3"
+			]
+		}
+	],
+	"com.worldwalkergames:devvotes-client": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"devvotes-client.*\\.jar"
+			],
+			"version": [
+				{
+					"type": "projectVar",
+					"value": "wilderworkspace.gameVersion"
+				},
+				{
+					"type": "assert",
+					"value": "Project has not declared game version to compile against!!"
+				}
+			]
+		}	
+	],
+	"com.worldwalkergames:eos-jni": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"eos_jni.*\\.jar"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "^eos_jni-?(.*?)\\.jar"
+				},
+				{
+					"type": "literal",
+					"value": "0.0.0+unknown"
+				}
+			]
+		}
+	],
+	"com.github.nateaustin:fmod-jni": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"fmod-jni.*\\.jar"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "^fmod-jni-?(.*?)\\.jar"
+				},
+				{
+					"type": "literal",
+					"value": "0.0.0+unknown"
+				}
+			]
+		},
+		{
+			"type": "maven",
+			"location": [
+				"com.github.nateaustin:fmod-jni",
+				"com.wildermods:fmod-jni"
+			]
+		}
+	],
+	"com.worldwalkergames:engine": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"gameEngine.*\\.jar"
+			],
+			"version": [
+				{
+					"type": "projectVar",
+					"value": "wilderworkspace.gameVersion"
+				},
+				{
+					"type": "assert",
+					"value": "Project has not declared game version to compile against!!"
+				}
+			]
+		}
+	],
+	"com.badlogicgames.gdx:gdx": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"gdx-\\d.*\\.jar"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "^gdx-?(.*?)\\.jar"
+				},
+				{
+					"type": "literal",
+					"value": "0.0.0+unknown"
+				}
+			]
+		}
+	],
+	"com.badlogicgames.gdx:gdx-backend-lwjgl3": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"gdx-backend-lwjgl3-.*\\.jar"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "^gdx-backend-lwjgl3-?(.*?)\\.jar"
+				},
+				{
+					"type": "literal",
+					"value": "0.0.0+unknown"
+				}
+			]
+		}
+	],
+	"com.badlogicgames.gdx:gdx-controllers-core": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"gdx-controllers-core-.*\\.jar"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "^gdx-controllers-core-?(.*?)\\.jar"
+				},
+				{
+					"type": "literal",
+					"value": "0.0.0+unknown"
+				}
+			]
+		}
+	],
+	"com.badlogicgames.gdx:gdx-controllers-desktop": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"gdx-controllers-desktop-.*\\.jar"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "^gdx-controllers-desktop-?(.*?)\\.jar"
+				},
+				{
+					"type": "literal",
+					"value": "0.0.0+unknown"
+				}
+			]
+		}
+	],
+	"de.golfgl.gdxcontrollerutils:gdx-controllerutils-scene2d": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"gdx-controllerutils-scene2d-.*\\.jar"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "^gdx-controllerutils-scene2d-?(.*?)\\.jar"
+				},
+				{
+					"type": "literal",
+					"value": "0.0.0+unknown"
+				}
+			]
+		}
+	],
+	"com.badlogicgames.gdx:gdx-freetype": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"gdx-freetype-\\d.*\\.jar"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "^gdx-freetype-?(.*?)\\.jar"
+				},
+				{
+					"type": "literal",
+					"value": "0.0.0+unknown"
+				}
+			]
+		}
+	],
+	"com.badlogicgames.gdx:gdx-freetype-platform": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"gdx-freetype-platform-.*-natives-desktop\\.jar"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "^gdx-freetype-platform-?(.*?)\\.jar"
+				},
+				{
+					"type": "literal",
+					"value": "0.0.0+unknown"
+				}
+			]
+		}
+	],
+	"com.badlogicgames.gdx:gdx-jnigen-loader": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"gdx-jnigen-loader-.*\\.jar"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "^gdx-jnigen-loader-?(.*?)\\.jar"
+				},
+				{
+					"type": "literal",
+					"value": "0.0.0+unknown"
+				}
+			]
+		}
+	],
+	"com.badlogicgames.gdx:gdx-platform": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"gdx-platform-.*-natives-desktop\\.jar"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "^gdx-platform-?(.*?)\\.jar"
+				},
+				{
+					"type": "literal",
+					"value": "0.0.0+unknown"
+				}
+			]
+		}
+	],
+	"com.worldwalkergames:gog-jni": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"gog_jni.*\\.jar"
+			],
+			"version": [
+				{
+					"type": "projectVar",
+					"value": "wilderworkspace.gameVersion"
+				},
+				{
+					"type": "assert",
+					"value": "Project has not declared game version to compile against!!"
+				}
+			]
+		}
+	],
+	"com.github.willianahartman:jamepad": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"jamepad-.*\\.jar"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "^jamepad-?(.*?)\\.jar"
+				},
+				{
+					"type": "literal",
+					"value": "0.0.0+unknown"
+				}
+			]
+		},
+		{
+			"type": "maven",
+			"location": [
+				"com.badlogicgames.jamepad:jamepad",
+				"com.github.mrstahlfelge:jamepad",
+				"com.xenoamess:jamepad"
+			]
+		}
+	],
+	"com.badlogicgames.jlayer:jlayer": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"jlayer-.*\\.jar"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "^jlayer-?(.*?)\\.jar"
+				},
+				{
+					"type": "literal",
+					"value": "0.0.0+unknown"
+				}
+			]
+		}
+	],
+	"com.sudoplay.joise:joise": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"joise-.*\\.jar"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "^joise-?(.*?)\\.jar"
+				},
+				{
+					"type": "literal",
+					"value": "0.0.0+unknown"
+				}
+			]
+		}
+	],
+	"org.jcraft:jorbis": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"jorbis-.*\\.jar"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "^jorbis-?(.*?)\\.jar"
+				},
+				{
+					"type": "literal",
+					"value": "0.0.0+unknown"
+				}
+			]
+		}
+	],
+	"org.lwjgl:lwjgl": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"lwjgl-\\d*\\.\\d*\\.\\d*\\.jar"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "^lwjgl-?(.*?)\\.jar"
+				},
+				{
+					"type": "literal",
+					"value": "0.0.0+unknown"
+				}
+			]
+		},
+		{
+			"type": "maven",
+			"location": [
+				"org.lwjgl.lwjgl:lwjgl"
+			]
+		}
+	],
+	"org.lwjgl:lwjgl-glfw": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"lwjgl-glfw-\\d*\\.\\d*\\.\\d*\\.jar"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "^lwjgl-glfw-?(.*?)\\.jar"
+				},
+				{
+					"type": "literal",
+					"value": "0.0.0+unknown"
+				}
+			]
+		}
+	],
+	"org.lwjgl:lwjgl-jemalloc": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"lwjgl-jemalloc-\\d*\\.\\d*\\.\\d*\\.jar"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "^lwjgl-jemalloc-?(.*?)\\.jar"
+				},
+				{
+					"type": "literal",
+					"value": "0.0.0+unknown"
+				}
+			]
+		}
+	],
+	"org.lwjgl:lwjgl-nfd": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"lwjgl-nfd.jar"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "^lwjgl-nfd-?(.*?)\\.jar"
+				},
+				{
+					"type": "literal",
+					"value": "0.0.0+unknown"
+				}
+			]
+		}
+	],
+	"org.lwjgl:lwjgl-openal": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"lwjgl-openal-\\d*\\.\\d*\\.\\d*\\.jar"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "^lwjgl-openal-?(.*?)\\.jar"
+				},
+				{
+					"type": "literal",
+					"value": "0.0.0+unknown"
+				}
+			]
+		}
+	],
+	"org.lwjgl:lwjgl-opengl": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"lwjgl-opengl-\\d*\\.\\d*\\.\\d*\\.jar"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "^lwjgl-opengl-?(.*?)\\.jar"
+				},
+				{
+					"type": "literal",
+					"value": "0.0.0+unknown"
+				}
+			]
+		}
+	],
+	"org.lwjgl:lwjgl-stb": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"lwjgl-stb-\\d*\\.\\d*\\.\\d*\\.jar"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "^lwjgl-stb-?(.*?)\\.jar"
+				},
+				{
+					"type": "literal",
+					"value": "0.0.0+unknown"
+				}
+			]
+		}
+	],
+	"io.netty:netty-all": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"^netty-all-\\d+(?:\\.\\d+){0,2}(?:\\.Final)?\\.jar$"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "^netty-all-(.+?)(?:(?:\\.Final)?\\.jar)$"
+				},
+				{
+					"type": "literal",
+					"value": "0.0.0+unknown"
+				}
+			]
+		}
+	],
+	"com.github.arlindnocaj:power-voroni-diagram": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"power-voroni-diagram-.*\\.jar"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "^power-voroni-diagram-?(.*?)\\.jar"
+				},
+				{
+					"type": "literal",
+					"value": "0.0.0+unknown"	
+				}
+			]
+		}
+	],
+	"com.worldwalkergames:wildermyth-server": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"server-.*\\.jar"
+			],
+			"version": [
+				{
+					"type": "projectVar",
+					"value": "wilderworkspace.gameVersion"
+				},
+				{
+					"type": "assert",
+					"value": "Project has not declared game version to compile against!!"
+				}
+			]
+		}
+	],
+	"com.code-disaster.steamworks4j:steamworks4j": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"steamworks4j-.*\\.jar"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "steamworks4j-?(.*?)\\.jar"
+				}
+			]
+		}
+	],
+	"com.github.aurelienribon:universal-tween-engine": [
+		{
+			"type": "file",
+			"location": [
+				"./libs"
+			],
+			"name": [
+				"^tween-engine-api(?:-\\d+(?:\\.\\d+){0,2})?\\.jar$"
+			],
+			"version": [
+				{
+					"type": "derived",
+					"value": "^tween-engine-api-?(.*?)\\.jar"
+				},
+				{
+					"type": "method",
+					"value": "getVersion",
+					"class": "aurelienribon.tweenengine.Tween",
+					"object": null,
+					"parameters": [
+						[]
+					]
+				},
+				{
+					"type": "literal",
+					"value": "6.3.3"
+				}
+			]
+		},
+		{
+			"type": "maven",
+			"location": [
+				"com.github.arcnor:universal-tween-engine",
+				"org.mini2Dx:universal-tween-engine"
+			]
+		}
+	],
+	"com.worldwalkergames:wildermyth": [
+		{
+			"type": "file",
+			"location": [
+				"./"
+			],
+			"name": [
+				"wildermyth\\.jar"
+			],
+			"version": [
+				{
+					"type": "projectVar",
+					"value": "wilderworkspace.gameVersion"
+				},
+				{
+					"type": "assert",
+					"value": "Project has not declared game version to compile against!!"
+				}
+			]
+		}
+	],
+	"com.worldwalkergames:wildermyth-scratchpad": [
+		{
+			"type": "file",
+			"location": [
+				"./"
+			],
+			"name": [
+				"scratchpad\\.jar"
+			],
+			"version": [
+				{
+					"type": "projectVar",
+					"value": "wilderworkspace.gameVersion"
+				},
+				{
+					"type": "assert",
+					"value": "Project has not declared game version to compile against!!"
+				}
+			]
+		}
+	]
+}

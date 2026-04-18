@@ -40,7 +40,6 @@ import com.wildermods.workspace.tasks.DecompileJarsTask;
 import com.wildermods.workspace.tasks.GenNestedMetadataJarsTask;
 import com.wildermods.workspace.tasks.GenerateLauncherMetadataTask;
 import com.wildermods.workspace.tasks.JarJarTask;
-import com.wildermods.workspace.tasks.eclipse.AddToDevRuntimeClassPathTask;
 import com.wildermods.workspace.tasks.eclipse.GenerateRunConfigurationTask;
 import com.wildermods.workspace.util.ExceptionUtil;
 
@@ -310,7 +309,6 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		compileClasspath.extendsFrom(provider);
 		compileClasspath.extendsFrom(retrieveJson);
 		compileClasspath.extendsFrom(jsonDependencies);
-		//compileClasspath.extendsFrom(compileOnly);
 		
 		testCompileClasspath = project.getConfigurations().getByName(ProjectDependencyType.testCompileClasspath.name());
 		testCompileClasspath.extendsFrom(compileClasspath);
@@ -608,7 +606,7 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 					xmlFileContent.getWhenMerged().add((classPathMerged) -> {
 						Classpath c = (Classpath) classPathMerged;
 						
-						Set<String> compilePaths = project.getConfigurations().getByName(ProjectDependencyType.compileOnly.name()).getResolvedConfiguration().getResolvedArtifacts().stream()
+						Set<String> compilePaths = project.getConfigurations().getByName(ProjectDependencyType.compileClasspath.name()).getResolvedConfiguration().getResolvedArtifacts().stream()
 								.map(a -> a.getFile().getAbsoluteFile().toPath().normalize().toString())
 								.collect(Collectors.toSet());
 						
@@ -662,6 +660,7 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 									
 									if(compilePaths.contains(lib.getPath())) {
 										project.getLogger().info("Ignoring compile only dlependency: " + path);
+										continue;
 									}
 								}
 								knotClasspath.add(path);
@@ -670,7 +669,7 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 							if(path != null) {
 								project.getLogger().info("Not a provider dependency: " + path);
 							}
-							it.remove();
+							//it.remove();
 						}
 						
 						project.getExtensions().getExtraProperties()

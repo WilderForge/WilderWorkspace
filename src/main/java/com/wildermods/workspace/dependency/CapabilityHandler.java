@@ -1,12 +1,19 @@
 package com.wildermods.workspace.dependency;
 
 import java.io.InputStreamReader;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import org.gradle.api.Project;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
+import com.wildermods.thrixlvault.exception.VersionParsingException;
+import com.wildermods.thrixlvault.utils.version.Version;
 
 public class CapabilityHandler {
 
@@ -64,10 +71,15 @@ public class CapabilityHandler {
 	
 	private static final class FileAlias implements Alias {
 
-		public final List<String> locations;
+		public final List<Path> locations;
 		public final List<String> namePatterns;
-		public final List<String> versionRules;
+		public final List<VersionRule> versionRules;
 		
+		public FileAlias(List<Path> locations, List<String> namePatterns, List<VersionRule> versionRules) {
+			this.locations = locations;
+			this.namePatterns = namePatterns;
+			this.versionRules = versionRules;
+		}
 		
 		@Override
 		public boolean matches() {
@@ -89,6 +101,68 @@ public class CapabilityHandler {
 	
 	private static interface Alias {
 		boolean matches();
+	}
+	
+	public static interface VersionRule<T> {
+		public Version obtainVersion(T component);
+	}
+	
+	public static class DerivedVersionRule implements VersionRule<String> {
+
+		private final Pattern pattern;
+		
+		public DerivedVersionRule(String regex) {
+			this.pattern = Pattern.compile(regex);
+		}
+		
+		@Override
+		public Version obtainVersion(String fileName) {
+			Matcher m = pattern.matcher(fileName);
+			try {
+				return m.find() ? Version.parse(m.group(1)) : null;
+			} catch (VersionParsingException e) {
+				e.printStackTrace();
+				return null;
+			}
+		}
+		
+	}
+	
+	public static class ProjectVersionRule implements VersionRule<Project> {
+		
+		private final String varName;
+		private final Project project;
+		
+		public ProjectVersionRule(Project project, String varName) {
+			this.project = project;
+			this.varName = varName;
+		}
+		
+		@Override
+		public Version obtainVersion(Project project) {
+			try {
+				String version = (String) project.findProperty(varName);
+				return version != null ? Version.parse(version) : null;
+			}
+			catch(Exception e) {
+				e.printStackTrace();
+				return null;
+			}
+		}
+		
+	}
+	
+	public static record LiteralVersionRule(String version) implements VersionRule<Void>{
+
+		@Override
+		public Version obtainVersion(Void component) {
+			try {
+				return Version.parse(version);
+			} catch (VersionParsingException e) {
+				throw new IllegalStateException(new IllegalArgumentException(version, e));
+			}
+		}
+		
 	}
 	
 }

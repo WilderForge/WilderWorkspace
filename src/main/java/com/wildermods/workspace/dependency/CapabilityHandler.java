@@ -1,14 +1,21 @@
 package com.wildermods.workspace.dependency;
 
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.gradle.api.Project;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
@@ -17,7 +24,8 @@ import com.wildermods.thrixlvault.utils.version.Version;
 
 public class CapabilityHandler {
 
-	public static final JsonObject capabilities;
+	private static final Gson gson = new GsonBuilder().create();
+	private static final JsonObject capabilities;
 	static {
 		capabilities = JsonParser.parseReader(
 			new JsonReader(
@@ -28,17 +36,19 @@ public class CapabilityHandler {
 		).getAsJsonObject();
 	}
 	
-	public static class CanonicalModule {
+	public static class CanonicalModule implements Moduled {
+		private final Project project;
 		private final String canonicalKey;
-		private final List<Alias> aliases;
+		private final List<AliasContainer<?>> aliases = new ArrayList<>();
 		private final List<FileAlias> fileAliases = new ArrayList<>();
 		private final List<MavenAlias> mavenAliases = new ArrayList<>();
 		
-		public CanonicalModule(String canonicalKey) {
+		public CanonicalModule(Project project, String canonicalKey) {
 			this.canonicalKey = canonicalKey;
+			this.project = project;
 		}
 		
-		public void addAlias(Alias alias) {
+		public void addAlias(AliasContainer<?> alias) {
 			aliases.add(alias);
 			if(alias instanceof FileAlias) {
 				fileAliases.add((FileAlias) alias);
@@ -48,7 +58,7 @@ public class CapabilityHandler {
 			}
 		}
 		
-		public List<Alias> getAliases() {
+		public List<AliasContainer<?>> getAliases() {
 			return aliases;
 		}
 		
@@ -67,100 +77,211 @@ public class CapabilityHandler {
 		public String toString() {
 			return canonicalKey;
 		}
-	}
-	
-	private static final class FileAlias implements Alias {
-
-		public final List<Path> locations;
-		public final List<String> namePatterns;
-		public final List<VersionRule> versionRules;
-		
-		public FileAlias(List<Path> locations, List<String> namePatterns, List<VersionRule> versionRules) {
-			this.locations = locations;
-			this.namePatterns = namePatterns;
-			this.versionRules = versionRules;
-		}
-		
-		@Override
-		public boolean matches() {
-			// TODO Auto-generated method stub
-			return false;
-		}
-		
-	}
-	
-	public static final class MavenAlias implements Alias {
 
 		@Override
-		public boolean matches() {
-			// TODO Auto-generated method stub
-			return false;
+		public CanonicalModule getCanonicalModule() {
+			return this;
 		}
-		
-	}
 	
-	private static interface Alias {
-		boolean matches();
-	}
+		private final class FileAlias implements AliasContainer<FileAlias.ConcreteFileAlias> {
 	
-	public static interface VersionRule<T> {
-		public Version obtainVersion(T component);
-	}
+			public final List<ConcreteFileAlias> aliases;
+			
+			public FileAlias(JsonObject json) {
+				String type;
+				Path[] locs;
+				String[] names;
+				
+				try {
+					type = json.getAsJsonPrimitive("type").toString();
+				}
+				catch(Exception e) {
+					throw new CapabilityDefinitionError("Unable to parse type", e);
+				}
+				
+				if("file".equals(type)) {
+					try {
+						List<JsonElement> locations = json.getAsJsonArray("location").asList();
+						locs = new Path[locations.size()];
+						for(int i = 0; i < locations.size(); i++) {
+							Path dir;
+							
+							try {
+								locs[i] = Path.of(locations.get(i).getAsJsonPrimitive().toString());
+							}
+							catch(Exception e) {
+								throw new CapabilityDefinitionError("Unable to parse location primitive");
+							}
+						}
+					}
+					catch(Exception e) {
+						throw new CapabilityDefinitionError("Unable to parse location array", e);
+					}
+				}
+				else {
+					throw new CapabilityDefinitionError("Unknown type: " + type);
+				}
+				
+				
+			}
+			
+			public class ConcreteFileAlias implements ConcreteAlias<ConcreteFileAlias> {
 	
-	public static class DerivedVersionRule implements VersionRule<String> {
+				private final Path file;
+				private final VersionRule rule;
+				
+				public ConcreteFileAlias(Path path, VersionRule rule) {
+					this.file = path;
+					this.rule = rule;
+				}
+				
+				@Override
+				public boolean matches() {
+					if(Files.exists(file)) {
+						if(Files.isRegularFile(file)) {
+							if(rule.obtainVersion() != null) {
+								return true;
+							}
+						}
+					}
+					return false;
+				}
 
-		private final Pattern pattern;
-		
-		public DerivedVersionRule(String regex) {
-			this.pattern = Pattern.compile(regex);
-		}
-		
-		@Override
-		public Version obtainVersion(String fileName) {
-			Matcher m = pattern.matcher(fileName);
-			try {
-				return m.find() ? Version.parse(m.group(1)) : null;
-			} catch (VersionParsingException e) {
-				e.printStackTrace();
+				@Override
+				public CanonicalModule getCanonicalModule() {
+					return CanonicalModule.this;
+				}
+				
+				public class DerivedVersionRule implements VersionRule {
+
+					private final Pattern pattern;
+					
+					public DerivedVersionRule(String regex) {
+						this.pattern = Pattern.compile(regex);
+					}
+					
+					@Override
+					public Version obtainVersion() {
+						Matcher m = pattern.matcher(file.getFileName().toString());
+						try {
+							return m.find() ? Version.parse(m.group(1)) : null;
+						} catch (VersionParsingException e) {
+							e.printStackTrace();
+							return null;
+						}
+					}
+					
+				}
+				
+				public class ProjectVersionRule implements VersionRule{
+					
+					private final String varName;
+					
+					public ProjectVersionRule(String varName) {
+						this.varName = varName;
+					}
+					
+					@Override
+					public Version obtainVersion() {
+						try {
+							String version = (String) CanonicalModule.this.project.findProperty(varName);
+							return version != null ? Version.parse(version) : null;
+						}
+						catch(Exception e) {
+							e.printStackTrace();
+							return null;
+						}
+					}
+					
+				}
+				
+			}
+	
+			@Override
+			public Iterator<ConcreteAlias<ConcreteFileAlias>> iterator() {
+				// TODO Auto-generated method stub
 				return null;
 			}
-		}
-		
-	}
-	
-	public static class ProjectVersionRule implements VersionRule<Project> {
-		
-		private final String varName;
-		private final Project project;
-		
-		public ProjectVersionRule(Project project, String varName) {
-			this.project = project;
-			this.varName = varName;
-		}
-		
-		@Override
-		public Version obtainVersion(Project project) {
-			try {
-				String version = (String) project.findProperty(varName);
-				return version != null ? Version.parse(version) : null;
+
+			@Override
+			public CanonicalModule getCanonicalModule() {
+				return CanonicalModule.this;
 			}
-			catch(Exception e) {
-				e.printStackTrace();
+			
+		}
+		
+		public final class MavenAlias implements AliasContainer<MavenAlias.ConcreteMavenAlias> {
+			
+			public class ConcreteMavenAlias implements ConcreteAlias<ConcreteMavenAlias> {
+	
+				@Override
+				public boolean matches() {
+					// TODO Auto-generated method stub
+					return false;
+				}
+
+				@Override
+				public CanonicalModule getCanonicalModule() {
+					return CanonicalModule.this;
+				}
+				
+			}
+	
+			@Override
+			public Iterator<ConcreteAlias<ConcreteMavenAlias>> iterator() {
+				// TODO Auto-generated method stub
 				return null;
 			}
+
+			@Override
+			public CanonicalModule getCanonicalModule() {
+				return CanonicalModule.this;
+			}
+			
 		}
-		
+	
 	}
 	
-	public static record LiteralVersionRule(String version) implements VersionRule<Void>{
+	private static interface AliasContainer<T extends ConcreteAlias<T>> extends Iterable<ConcreteAlias<T>>, Moduled {
+		public default String getCanonicalKey() {
+			return Moduled.super.getCanonicalKey();
+		}
+	}
+	
+	private static interface ConcreteAlias<T> extends Moduled {
+		public boolean matches();
+	}
+	
+	public static interface Moduled {
+		public CanonicalModule getCanonicalModule();
+		
+		public default String getCanonicalKey() {
+			return getCanonicalModule().canonicalKey;
+		}
+	}
+	
+	public static interface VersionRule {
+		public Version obtainVersion();
+	}
+	
+	public static record LiteralVersionRule(String version) implements VersionRule {
 
 		@Override
-		public Version obtainVersion(Void component) {
+		public Version obtainVersion() {
 			try {
 				return Version.parse(version);
 			} catch (VersionParsingException e) {
 				throw new IllegalStateException(new IllegalArgumentException(version, e));
 			}
+		}
+		
+	}
+	
+	public static record AssertVersionRule(String message) implements VersionRule {
+		
+		@Override
+		public Version obtainVersion() {
+			throw new AssertionError(message);
 		}
 		
 	}

@@ -1,12 +1,16 @@
 package com.wildermods.workspace.dependency;
 
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -18,6 +22,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import com.google.gson.stream.JsonReader;
 import com.wildermods.thrixlvault.exception.VersionParsingException;
 import com.wildermods.thrixlvault.utils.version.Version;
@@ -84,13 +89,9 @@ public class CapabilityHandler {
 		}
 	
 		private final class FileAlias implements AliasContainer<FileAlias.ConcreteFileAlias> {
-	
-			public final List<ConcreteFileAlias> aliases;
 			
 			public FileAlias(JsonObject json) {
 				String type;
-				Path[] locs;
-				String[] names;
 				
 				try {
 					type = json.getAsJsonPrimitive("type").toString();
@@ -100,14 +101,39 @@ public class CapabilityHandler {
 				}
 				
 				if("file".equals(type)) {
+					
+					JsonArray locationsJson;
+					JsonArray namesJson;
+					JsonArray versionsJson;
+					
 					try {
-						List<JsonElement> locations = json.getAsJsonArray("location").asList();
-						locs = new Path[locations.size()];
+						locationsJson = json.getAsJsonArray("location");
+					}
+					catch(Exception e) {
+						throw new CapabilityDefinitionError("Unable to parse location array", e);
+					}
+					
+					try {
+						namesJson = json.getAsJsonArray("name");
+					}
+					catch(Exception e) {
+						throw new CapabilityDefinitionError("Unable to parse name array", e);
+					}
+					
+					try {
+						versionsJson = json.getAsJsonArray("version");
+					}
+					catch(Exception e) {
+						throw new CapabilityDefinitionError("Unable to parse version array", e);
+					}
+					
+					Path[] dirs;
+					try {
+						List<JsonElement> locations = locationsJson.asList();
+						dirs = new Path[locations.size()];
 						for(int i = 0; i < locations.size(); i++) {
-							Path dir;
-							
 							try {
-								locs[i] = Path.of(locations.get(i).getAsJsonPrimitive().toString());
+								dirs[i] = Path.of(locations.get(i).getAsJsonPrimitive().toString());
 							}
 							catch(Exception e) {
 								throw new CapabilityDefinitionError("Unable to parse location primitive");
@@ -117,18 +143,82 @@ public class CapabilityHandler {
 					catch(Exception e) {
 						throw new CapabilityDefinitionError("Unable to parse location array", e);
 					}
+					
+					Pattern[] patterns;
+					try {
+						@SuppressWarnings("unchecked")
+						List<JsonPrimitive> namePatterns = (List<JsonPrimitive>)(Object)namesJson.asList();
+						patterns = new Pattern[namePatterns.size()];
+						
+						for(int i = 0; i < namePatterns.size(); i++) {
+							try {
+								patterns[i] = Pattern.compile(namePatterns.get(i).getAsJsonPrimitive().toString());
+							}
+							catch(Exception e) {
+								throw new CapabilityDefinitionError("Unable to parse name regex pattern", e);
+							}
+						}
+					}
+					catch(Exception e) {
+						throw new CapabilityDefinitionError("Unable to parse name array", e);
+					}
+					
+					VersionRule[] versionRules;
+					try {
+						@SuppressWarnings("unchecked")
+						List<JsonObject> versionObjects = (List<JsonObject>)(Object)versionsJson.asList();
+						
+					}
+					catch(Exception e) {
+						throw new CapabilityDefinitionError("Unable to parse version array", e);
+					}
+					
+					Map<Path, List<Path>> fileMap = new LinkedHashMap<>(); //TODO: We can reduce the amount of file accesses further by doing this once per json file, rather than once per capability entry
+					for(Path dir : dirs) {
+						if(!fileMap.containsKey(dir)) {
+							fileMap.put(dir, new ArrayList<Path>());
+						}
+						List<Path> files = fileMap.get(dir);
+						try {
+							for(Path file : Files.newDirectoryStream(dir)) {
+								files.add(file);
+							}
+						} catch (IOException e) {
+							e.printStackTrace();
+							continue;
+						}
+					}
+					
+					for(Pattern pattern : patterns) {
+						for(List<Path> pathGroup : fileMap.values()) {
+							for(Path file : pathGroup) {
+								Matcher matcher = pattern.matcher(file.getFileName().toString());
+								if(matcher.matches()) {
+									
+								}
+							}
+						}
+					}
 				}
 				else {
 					throw new CapabilityDefinitionError("Unknown type: " + type);
 				}
 				
 				
+				
 			}
+			
+
 			
 			public class ConcreteFileAlias implements ConcreteAlias<ConcreteFileAlias> {
 	
 				private final Path file;
-				private final VersionRule rule;
+				private VersionRule rule;
+				
+				public ConcreteFileAlias(Path path, JsonObject json) {
+					this.file = path;
+					this.rule = parseVersionRule(json);
+				}
 				
 				public ConcreteFileAlias(Path path, VersionRule rule) {
 					this.file = path;
@@ -150,6 +240,37 @@ public class CapabilityHandler {
 				@Override
 				public CanonicalModule getCanonicalModule() {
 					return CanonicalModule.this;
+				}
+				
+				private VersionRule parseVersionRule(JsonObject json) {
+					String type;
+					String value;
+					try {
+						type = json.getAsJsonPrimitive("type").toString();
+					}
+					catch(Exception e) {
+						throw new CapabilityDefinitionError("Unable to parse version type", e);
+					}
+					
+					try {
+						value = json.getAsJsonPrimitive("value").toString();
+					}
+					catch(Exception e) {
+						throw new CapabilityDefinitionError("Unable to parse version value", e);
+					}
+					
+					switch(type) {
+						case "derived":
+							return new DerivedVersionRule(value);
+						case "literal":
+							return new LiteralVersionRule(value);
+						case "projectVar":
+							return new ProjectVersionRule(value);
+						case "assert":
+							return new AssertVersionRule(value);
+						default:
+							throw new CapabilityDefinitionError("Unknown version rule type: " + type);
+					}
 				}
 				
 				public class DerivedVersionRule implements VersionRule {
@@ -207,6 +328,8 @@ public class CapabilityHandler {
 			public CanonicalModule getCanonicalModule() {
 				return CanonicalModule.this;
 			}
+			
+			
 			
 		}
 		

@@ -769,12 +769,8 @@
 				},
 				{
 					"type": "method",
-					"value": "getVersion",
-					"class": "aurelienribon.tweenengine.Tween",
-					"object": null,
-					"parameters": [
-						[]
-					]
+					"value": "getTweenVersion",
+					"class": "com.wildermods.workspace.dependency.CapabilityHandler"
 				},
 				{
 					"type": "literal",

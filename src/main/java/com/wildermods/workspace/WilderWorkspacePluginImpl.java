@@ -1,11 +1,17 @@
 package com.wildermods.workspace;
 
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.ComponentMetadataContext;
+import org.gradle.api.artifacts.ComponentMetadataDetails;
+import org.gradle.api.artifacts.ComponentMetadataRule;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleDependency;
+import org.gradle.api.artifacts.ModuleVersionIdentifier;
+import org.gradle.api.artifacts.dsl.ComponentMetadataHandler;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
+import org.gradle.api.artifacts.repositories.FlatDirectoryArtifactRepository;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.initialization.Settings;
@@ -32,6 +38,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.wildermods.thrixlvault.utils.version.Version;
+import com.wildermods.workspace.dependency.CapabilityHandler;
 import com.wildermods.workspace.dependency.ProjectDependencyType;
 import com.wildermods.workspace.dependency.WWProjectDependency;
 import com.wildermods.workspace.tasks.ClearLocalRuntimeTask;
@@ -46,6 +54,7 @@ import com.wildermods.workspace.util.ExceptionUtil;
 import net.fabricmc.loom.build.nesting.NestableJarGenerationTask;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -53,13 +62,16 @@ import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import javax.inject.Inject;
 import javax.net.ssl.HttpsURLConnection;
 
 import org.gradle.api.DefaultTask;
@@ -86,6 +98,7 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 	
 	/** The version of the WilderWorkspace plugin. */
 	public static final String VERSION = "@workspaceVersion@";
+	public static final String GAME_LIBS_REPO_NAME = "gameLibs";
 	
 	static {
 		JavaPlugin.class.arrayType();
@@ -153,6 +166,8 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			setupTasks(context);
 			
 			setupPostEvaluations(context);
+			
+			setupCapabilities(context);
 			
 			try {
 				addJsonDependencies(context);
@@ -571,8 +586,26 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 	 * @param context the project context
 	 */
 	private void setupPostEvaluations(WWProjectContext context) {
-
 		setupEclipsePlugin(context);
+	}
+	
+	private void setupCapabilities(WWProjectContext context) {
+		try {
+			Project project = context.getProject();
+			CapabilityHandler handler = new CapabilityHandler(project);
+			RepositoryHandler repos = project.getRepositories();
+			repos.flatDir(repo -> {
+				repo.setName(GAME_LIBS_REPO_NAME);
+				repo.dir("libs");
+				repo.dir(".");
+			});
+			
+	        Map<String, ModuleInfo> flatDirModuleInfo = scanFlatDirModules(project, handler);
+	        registerRules(project, flatDirModuleInfo, handler);
+		}
+		catch(Exception e) {
+			throw new Error(e);
+		}
 	}
 	
 	/**
@@ -746,6 +779,58 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 
 	}
 	
+    private Map<String, ModuleInfo> scanFlatDirModules(Project project, CapabilityHandler handler) throws IOException {
+        Map<String, ModuleInfo> result = new HashMap<>();
+        FlatDirectoryArtifactRepository repo = (FlatDirectoryArtifactRepository)
+                project.getRepositories().getByName(GAME_LIBS_REPO_NAME);
+
+        for (File dir : repo.getDirs()) {
+            Path path = dir.toPath();
+            if (!Files.isDirectory(path)) continue;
+            Files.list(path)
+                .filter(p -> p.toString().endsWith(".jar"))
+                .forEach(jar -> {
+                    String fileName = jar.getFileName().toString();
+                    String moduleName = fileName.substring(0, fileName.length() - 4); // remove .jar
+                    handler.findModuleForFile(jar).ifPresent(module -> {
+                        module.fileAliases.stream()
+                            .filter(alias -> alias.matches(jar))
+                            .findFirst()
+                            .flatMap(alias -> alias.extractVersion(jar))
+                            .ifPresent(version -> {
+                                result.put(moduleName, new ModuleInfo(
+                                    module.getGroup(),
+                                    module.getName(),
+                                    version
+                                ));
+                            });
+                    });
+                });
+        }
+        return result;
+    }
+	
+    private void registerRules(Project project, Map<String, ModuleInfo> flatDirModuleInfo, CapabilityHandler handler) {
+        ComponentMetadataHandler components = project.getDependencies().getComponents();
+
+        // Rule for flatDir modules - passes the map via constructor
+        components.all(FlatDirCapabilityRule.class, spec -> {
+            spec.params(flatDirModuleInfo);
+        });
+
+        // Rule for Maven aliases - passes group and artifact via constructor
+        for (CapabilityHandler.CanonicalModule module : handler.modules.values()) {
+            for (String mavenCoord : module.mavenAliases) {
+                String[] parts = mavenCoord.split(":", 2);
+                String group = parts[0];
+                String name = parts[1];
+                components.withModule(group + ":" + name, MavenAliasCapabilityRule.class, spec -> {
+                    spec.params(module.getGroup(), module.getName());
+                });
+            }
+        }
+    }
+    
 	private boolean canResolveUrl(WWProjectContext context, String urlString) {
 		Project project = context.getProject();
 		project.getLogger().log(LogLevel.INFO, "Checking URL: " + urlString);
@@ -775,4 +860,51 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		}
 	}
 	
+	// ---------- ComponentMetadataRule for FlatDir aliases ----------
+	public static abstract class FlatDirCapabilityRule implements ComponentMetadataRule {
+	    private final Map<String, ModuleInfo> moduleInfoMap;
+
+	    @Inject
+	    public FlatDirCapabilityRule(Map<String, ModuleInfo> moduleInfoMap) {
+	        this.moduleInfoMap = moduleInfoMap;
+	    }
+
+	    @Override
+	    public void execute(ComponentMetadataContext context) {
+	        ComponentMetadataDetails details = context.getDetails();
+	        ModuleVersionIdentifier id = details.getId();
+
+	        if (!id.getGroup().isEmpty()) return;
+
+	        ModuleInfo info = moduleInfoMap.get(id.getName());
+	        if (info == null) return;
+
+	        details.allVariants(variant -> variant.withCapabilities(caps ->
+	            caps.addCapability(info.group, info.artifact, info.version.toString())
+	        ));
+	    }
+	}
+
+    // ---------- ComponentMetadataRule for Maven aliases ----------
+	public static abstract class MavenAliasCapabilityRule implements ComponentMetadataRule {
+	    private final String canonicalGroup;
+	    private final String canonicalName;
+
+	    @Inject
+	    public MavenAliasCapabilityRule(String canonicalGroup, String canonicalName) {
+	        this.canonicalGroup = canonicalGroup;
+	        this.canonicalName = canonicalName;
+	    }
+
+	    @Override
+	    public void execute(ComponentMetadataContext context) {
+	        ComponentMetadataDetails details = context.getDetails();
+	        String version = details.getId().getVersion();
+	        details.allVariants(variant -> variant.withCapabilities(caps ->
+	            caps.addCapability(canonicalGroup, canonicalName, version)
+	        ));
+	    }
+	}
+	
+	public static record ModuleInfo(String group, String artifact, Version version) {}
 }

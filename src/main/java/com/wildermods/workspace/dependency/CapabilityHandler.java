@@ -22,6 +22,8 @@ import org.gradle.api.Project;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.wildermods.thrixlvault.exception.VersionParsingException;
+import com.wildermods.thrixlvault.utils.version.Version;
 
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -30,7 +32,7 @@ import org.objectweb.asm.Opcodes;
 
 public class CapabilityHandler {
 
-	private final Map<String, CanonicalModule> modules = new LinkedHashMap<>();
+	public final Map<String, CanonicalModule> modules = new LinkedHashMap<>();
 
 	public CapabilityHandler(Project project) throws IOException {
 		this(project, readJsonFromResource("capabilities.json"));
@@ -126,10 +128,20 @@ public class CapabilityHandler {
 			return inDirectory;
 		}
 
-		public Optional<String> extractVersion(Path file) {
+		public Optional<Version> extractVersion(Path file) {
 			for (var extractor : versionExtractors) {
-				Optional<String> version = extractor.extract(file);
-				if (version.isPresent()) return version;
+				Optional<Version> version;
+				if(extractor.extract(file).isPresent()) {
+					try {
+						version = Optional.of(Version.parse(extractor.extract(file).get()));
+					} 
+					catch (VersionParsingException e) {
+						version = Optional.empty();
+					}
+					if (version.isPresent()) {
+						return version;
+					}
+				}
 			}
 			return Optional.empty();
 		}

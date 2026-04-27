@@ -600,8 +600,31 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 				repo.dir(".");
 			});
 			
-	        Map<String, ModuleInfo> flatDirModuleInfo = scanFlatDirModules(project, handler);
-	        registerRules(project, flatDirModuleInfo, handler);
+			var compileOnly = project.getConfigurations().getByName(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME);
+			
+			// Add the first file tree: ./bin/*.jar
+			compileOnly.getDependencies().add(
+				project.getDependencies().create(
+					project.fileTree("./bin/", spec -> spec.include("*.jar"))
+				)
+			);
+			
+			// Add the second file tree: ./bin/lib/*.jar
+			compileOnly.getDependencies().add(
+				project.getDependencies().create(
+					project.fileTree("./bin/lib/", spec -> spec.include("*.jar"))
+				)
+			);
+
+			
+			Map<String, ModuleInfo> flatDirModuleInfo = scanFlatDirModules(project, handler);
+			registerRules(project, flatDirModuleInfo, handler);
+			
+			for (Map.Entry<String, ModuleInfo> entry : flatDirModuleInfo.entrySet()) {
+				ModuleInfo info = entry.getValue();
+				project.getDependencies().add("compileOnly", 
+					project.getDependencies().create(info.group + ":" + info.artifact + ":" + info.version));
+			}
 		}
 		catch(Exception e) {
 			throw new Error(e);
@@ -779,58 +802,58 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 
 	}
 	
-    private Map<String, ModuleInfo> scanFlatDirModules(Project project, CapabilityHandler handler) throws IOException {
-        Map<String, ModuleInfo> result = new HashMap<>();
-        FlatDirectoryArtifactRepository repo = (FlatDirectoryArtifactRepository)
-                project.getRepositories().getByName(GAME_LIBS_REPO_NAME);
+	private Map<String, ModuleInfo> scanFlatDirModules(Project project, CapabilityHandler handler) throws IOException {
+		Map<String, ModuleInfo> result = new HashMap<>();
+		FlatDirectoryArtifactRepository repo = (FlatDirectoryArtifactRepository)
+				project.getRepositories().getByName(GAME_LIBS_REPO_NAME);
 
-        for (File dir : repo.getDirs()) {
-            Path path = dir.toPath();
-            if (!Files.isDirectory(path)) continue;
-            Files.list(path)
-                .filter(p -> p.toString().endsWith(".jar"))
-                .forEach(jar -> {
-                    String fileName = jar.getFileName().toString();
-                    String moduleName = fileName.substring(0, fileName.length() - 4); // remove .jar
-                    handler.findModuleForFile(jar).ifPresent(module -> {
-                        module.fileAliases.stream()
-                            .filter(alias -> alias.matches(jar))
-                            .findFirst()
-                            .flatMap(alias -> alias.extractVersion(jar))
-                            .ifPresent(version -> {
-                                result.put(moduleName, new ModuleInfo(
-                                    module.getGroup(),
-                                    module.getName(),
-                                    version
-                                ));
-                            });
-                    });
-                });
-        }
-        return result;
-    }
+		for (File dir : repo.getDirs()) {
+			Path path = dir.toPath();
+			if (!Files.isDirectory(path)) continue;
+			Files.list(path)
+				.filter(p -> p.toString().endsWith(".jar"))
+				.forEach(jar -> {
+					String fileName = jar.getFileName().toString();
+					String moduleName = fileName.substring(0, fileName.length() - 4); // remove .jar
+					handler.findModuleForFile(jar).ifPresent(module -> {
+						module.fileAliases.stream()
+							.filter(alias -> alias.matches(jar))
+							.findFirst()
+							.flatMap(alias -> alias.extractVersion(jar))
+							.ifPresent(version -> {
+								result.put(moduleName, new ModuleInfo(
+									module.getGroup(),
+									module.getName(),
+									version
+								));
+							});
+					});
+				});
+		}
+		return result;
+	}
 	
-    private void registerRules(Project project, Map<String, ModuleInfo> flatDirModuleInfo, CapabilityHandler handler) {
-        ComponentMetadataHandler components = project.getDependencies().getComponents();
+	private void registerRules(Project project, Map<String, ModuleInfo> flatDirModuleInfo, CapabilityHandler handler) {
+		ComponentMetadataHandler components = project.getDependencies().getComponents();
 
-        // Rule for flatDir modules - passes the map via constructor
-        components.all(FlatDirCapabilityRule.class, spec -> {
-            spec.params(flatDirModuleInfo);
-        });
+		// Rule for flatDir modules - passes the map via constructor
+		components.all(FlatDirCapabilityRule.class, spec -> {
+			spec.params(flatDirModuleInfo);
+		});
 
-        // Rule for Maven aliases - passes group and artifact via constructor
-        for (CapabilityHandler.CanonicalModule module : handler.modules.values()) {
-            for (String mavenCoord : module.mavenAliases) {
-                String[] parts = mavenCoord.split(":", 2);
-                String group = parts[0];
-                String name = parts[1];
-                components.withModule(group + ":" + name, MavenAliasCapabilityRule.class, spec -> {
-                    spec.params(module.getGroup(), module.getName());
-                });
-            }
-        }
-    }
-    
+		// Rule for Maven aliases - passes group and artifact via constructor
+		for (CapabilityHandler.CanonicalModule module : handler.modules.values()) {
+			for (String mavenCoord : module.mavenAliases) {
+				String[] parts = mavenCoord.split(":", 2);
+				String group = parts[0];
+				String name = parts[1];
+				components.withModule(group + ":" + name, MavenAliasCapabilityRule.class, spec -> {
+					spec.params(module.getGroup(), module.getName());
+				});
+			}
+		}
+	}
+	
 	private boolean canResolveUrl(WWProjectContext context, String urlString) {
 		Project project = context.getProject();
 		project.getLogger().log(LogLevel.INFO, "Checking URL: " + urlString);
@@ -862,48 +885,48 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 	
 	// ---------- ComponentMetadataRule for FlatDir aliases ----------
 	public static abstract class FlatDirCapabilityRule implements ComponentMetadataRule {
-	    private final Map<String, ModuleInfo> moduleInfoMap;
+		private final Map<String, ModuleInfo> moduleInfoMap;
 
-	    @Inject
-	    public FlatDirCapabilityRule(Map<String, ModuleInfo> moduleInfoMap) {
-	        this.moduleInfoMap = moduleInfoMap;
-	    }
+		@Inject
+		public FlatDirCapabilityRule(Map<String, ModuleInfo> moduleInfoMap) {
+			this.moduleInfoMap = moduleInfoMap;
+		}
 
-	    @Override
-	    public void execute(ComponentMetadataContext context) {
-	        ComponentMetadataDetails details = context.getDetails();
-	        ModuleVersionIdentifier id = details.getId();
+		@Override
+		public void execute(ComponentMetadataContext context) {
+			ComponentMetadataDetails details = context.getDetails();
+			ModuleVersionIdentifier id = details.getId();
 
-	        if (!id.getGroup().isEmpty()) return;
+			if (!id.getGroup().isEmpty()) return;
 
-	        ModuleInfo info = moduleInfoMap.get(id.getName());
-	        if (info == null) return;
+			ModuleInfo info = moduleInfoMap.get(id.getName());
+			if (info == null) return;
 
-	        details.allVariants(variant -> variant.withCapabilities(caps ->
-	            caps.addCapability(info.group, info.artifact, info.version.toString())
-	        ));
-	    }
+			details.allVariants(variant -> variant.withCapabilities(caps ->
+				caps.addCapability(info.group, info.artifact, info.version.toString())
+			));
+		}
 	}
 
-    // ---------- ComponentMetadataRule for Maven aliases ----------
+	// ---------- ComponentMetadataRule for Maven aliases ----------
 	public static abstract class MavenAliasCapabilityRule implements ComponentMetadataRule {
-	    private final String canonicalGroup;
-	    private final String canonicalName;
+		private final String canonicalGroup;
+		private final String canonicalName;
 
-	    @Inject
-	    public MavenAliasCapabilityRule(String canonicalGroup, String canonicalName) {
-	        this.canonicalGroup = canonicalGroup;
-	        this.canonicalName = canonicalName;
-	    }
+		@Inject
+		public MavenAliasCapabilityRule(String canonicalGroup, String canonicalName) {
+			this.canonicalGroup = canonicalGroup;
+			this.canonicalName = canonicalName;
+		}
 
-	    @Override
-	    public void execute(ComponentMetadataContext context) {
-	        ComponentMetadataDetails details = context.getDetails();
-	        String version = details.getId().getVersion();
-	        details.allVariants(variant -> variant.withCapabilities(caps ->
-	            caps.addCapability(canonicalGroup, canonicalName, version)
-	        ));
-	    }
+		@Override
+		public void execute(ComponentMetadataContext context) {
+			ComponentMetadataDetails details = context.getDetails();
+			String version = details.getId().getVersion();
+			details.allVariants(variant -> variant.withCapabilities(caps ->
+				caps.addCapability(canonicalGroup, canonicalName, version)
+			));
+		}
 	}
 	
 	public static record ModuleInfo(String group, String artifact, Version version) {}

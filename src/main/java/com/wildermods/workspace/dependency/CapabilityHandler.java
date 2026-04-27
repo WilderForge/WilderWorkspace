@@ -35,7 +35,7 @@ public class CapabilityHandler {
 	public final Map<String, CanonicalModule> modules = new LinkedHashMap<>();
 
 	public CapabilityHandler(Project project) throws IOException {
-		this(project, readJsonFromResource("capabilities.json"));
+		this(project, readJsonFromResource("/capabilities.json"));
 	}
 
 	public CapabilityHandler(Project project, JsonObject json) {
@@ -45,12 +45,17 @@ public class CapabilityHandler {
 			for (JsonElement aliasElem : entry.getValue().getAsJsonArray()) {
 				JsonObject aliasObj = aliasElem.getAsJsonObject();
 				String type = aliasObj.get("type").getAsString();
-				if ("file".equals(type)) {
-					module.fileAliases.add(FileAlias.fromJson(aliasObj, project));
-				} else if ("maven".equals(type)) {
-					module.mavenAliases.addAll(MavenAlias.fromJson(aliasObj));
-				} else {
-					throw new IllegalArgumentException("Unknown alias type: " + type);
+				try {
+					if ("file".equals(type)) {
+						module.fileAliases.add(FileAlias.fromJson(module, aliasObj, project));
+					} else if ("maven".equals(type)) {
+						module.mavenAliases.addAll(MavenAlias.fromJson(aliasObj));
+					} else {
+						throw new IllegalArgumentException("Unknown alias type: " + type);
+					}
+				}
+				catch(Throwable t) {
+					throw new Error("Could not parse module " + canonicalKey, t);
 				}
 			}
 			modules.put(canonicalKey, module);
@@ -86,6 +91,7 @@ public class CapabilityHandler {
 		public CanonicalModule(String key) { this.key = key; }
 		public String getGroup() { return key.split(":", 2)[0]; }
 		public String getName() { return key.split(":", 2)[1]; }
+		public String toString() { return key;}
 	}
 
 	public static class FileAlias {
@@ -99,7 +105,7 @@ public class CapabilityHandler {
 			this.versionExtractors = extractors;
 		}
 
-		public static FileAlias fromJson(JsonObject json, Project project) {
+		public static FileAlias fromJson(CanonicalModule module, JsonObject json, Project project) {
 			List<Path> dirs = json.getAsJsonArray("location").asList().stream()
 					.map(e -> Path.of(e.getAsString()))
 					.collect(Collectors.toList());
@@ -109,7 +115,7 @@ public class CapabilityHandler {
 					.collect(Collectors.toList());
 
 			List<VersionExtractor> extractors = json.getAsJsonArray("version").asList().stream()
-					.map(e -> createVersionExtractor(e.getAsJsonObject(), project))
+					.map(e -> createVersionExtractor(module, e.getAsJsonObject(), project))
 					.collect(Collectors.toList());
 
 			return new FileAlias(dirs, patterns, extractors);
@@ -161,21 +167,30 @@ public class CapabilityHandler {
 		Optional<String> extract(Path file);
 	}
 
-	private static VersionExtractor createVersionExtractor(JsonObject rule, Project project) {
+	private static VersionExtractor createVersionExtractor(CanonicalModule module, JsonObject rule, Project project) {
 		String type = rule.get("type").getAsString();
 		String value = rule.get("value").getAsString();
 
+		project.getLogger().info(module + ": Version extractor for " + module);
+		
 		switch (type) {
 			case "derived":
+				project.getLogger().info(module + ": derived - " + value);
 				Pattern pattern = Pattern.compile(value);
 				return file -> pattern.matcher(file.getFileName().toString()).results()
 						.findFirst().map(m -> m.group(1));
 			case "literal":
+				project.getLogger().info(module + ": literal - " + value);
 				return file -> Optional.of(value);
 			case "projectVar":
-				return file -> Optional.ofNullable(project.findProperty(value))
+				project.getLogger().info(module + ": projectVar - " + value);
+				project.getExtensions().getExtraProperties().getProperties().forEach((key, val) -> {
+					project.getLogger().info(module + ": EXTRA-PROPERTIES - KEY:" + key + " - VALUE: " + val);
+				});
+				return file -> Optional.ofNullable(project.getExtensions().getExtraProperties().get("gameVersion"))
 						.map(Object::toString);
 			case "method":
+				project.getLogger().info(module + ": method - " + value);
 				return file -> {
 					try {
 						String clazzName = rule.get("class").getAsString();
@@ -192,7 +207,10 @@ public class CapabilityHandler {
 					return Optional.empty();
 				};
 			case "assert":
-				throw new AssertionError(value);
+				project.getLogger().info(module + ": assert - " + value);
+				return file -> {
+					throw new AssertionError(value);
+				};
 			default:
 				throw new IllegalArgumentException("Unknown version rule: " + type);
 		}

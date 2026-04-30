@@ -7,7 +7,6 @@ import org.gradle.api.artifacts.ComponentMetadataRule;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleDependency;
-import org.gradle.api.artifacts.ModuleVersionIdentifier;
 import org.gradle.api.artifacts.dsl.ComponentMetadataHandler;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
@@ -156,6 +155,14 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 
 			WilderWorkspaceExtension extension = project.getExtensions().create("wilderWorkspace", WilderWorkspaceExtension.class);
 			extension.loadUserConfig();
+			
+			// Automatically use ext.gameVersion if present
+			if (project.hasProperty("gameVersion")) {
+				String gameVersion = project.property("gameVersion").toString();
+				extension.useDependency(gameVersion);
+				project.getLogger().info("Automatically using game version from ext.gameVersion: " + gameVersion);
+			}
+			
 			WWProjectContext context = new WWProjectContext(project, extension) {};
 
 			//Set up capabilities FIRST (Ivy + Maven repositories, scan, generate Ivy, etc.)

@@ -44,6 +44,14 @@ public enum ProjectDependencyType {
 	 */
 	fabricImpl,
 	
+	
+	/**
+	 * Dependencies that should not be on the knot classpath at runtime.
+	 * 
+	 * Used when launching from IDEs.
+	 */
+	provider,
+	
 	/**
 	 * All implementation dependencies (including configurations which extend 'implementation'
 	 * 
@@ -75,6 +83,8 @@ public enum ProjectDependencyType {
 	 * retrieveJson libs.fabric-loader
 	 */
 	retrieveJson,
+	
+	retrieveJsonProvider,
 	
 	/**
 	 * A non-transitive subdependency of a dependency. These dependencies are needed only at compile time, as

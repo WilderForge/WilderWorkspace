@@ -619,7 +619,9 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 	private void addIvyRepository(Project project) {
 		Path ivyRepoDir = project.getBuildDir().toPath().resolve("ivy").toAbsolutePath();
 		// Construct explicit file: URL (double slash after colon)
-		String repoUrl = "file:" + ivyRepoDir.toString();
+		String path = ivyRepoDir.toString().replace('\\', '/');
+		String repoUrl = path.startsWith("/") ? "file:" + path : "file:/" + path;
+		project.getLogger().info("Ivy repository URL: " + repoUrl);
 		project.getRepositories().ivy(repo -> {
 			repo.setName("WildermythGameIvy");
 			repo.setUrl(repoUrl);

@@ -10,7 +10,9 @@ import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.OutputFile;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.work.DisableCachingByDefault;
 
+@DisableCachingByDefault(because = "This task is a one time workspace setup task and should not be cached")
 public class GenerateRunConfigurationTask extends DefaultTask {
 
 	private static final Path NESTED_JARS = Path.of("build").resolve("nested-jars");

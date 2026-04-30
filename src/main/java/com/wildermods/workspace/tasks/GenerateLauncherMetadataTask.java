@@ -16,7 +16,9 @@ import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.file.ConfigurableFileCollection;
 import org.gradle.api.tasks.OutputFiles;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.work.DisableCachingByDefault;
 
+@DisableCachingByDefault(because = "This task is a one time workspace setup task and should not be cached")
 public abstract class GenerateLauncherMetadataTask extends DefaultTask {
 
 	@OutputFiles

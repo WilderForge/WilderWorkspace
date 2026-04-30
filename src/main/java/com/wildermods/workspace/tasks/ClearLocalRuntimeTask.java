@@ -10,6 +10,7 @@ import org.apache.commons.io.file.PathUtils;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.work.DisableCachingByDefault;
 
 import com.wildermods.workspace.util.FileHelper.IgnoreSymbolicVisitor;
 
@@ -19,6 +20,7 @@ import com.wildermods.workspace.util.FileHelper.IgnoreSymbolicVisitor;
  * This task deletes the specified directories for dependencies and decompiled sources. By defualt, the entirety of './bin'
  * </p>
  */
+@DisableCachingByDefault(because = "This task is a one time workspace setup task and should not be cached")
 public class ClearLocalRuntimeTask extends DefaultTask {
 
 	@Input

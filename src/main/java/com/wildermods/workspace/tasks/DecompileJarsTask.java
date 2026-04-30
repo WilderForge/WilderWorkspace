@@ -5,11 +5,13 @@ import java.nio.file.Path;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.work.DisableCachingByDefault;
 
 import com.wildermods.workspace.decomp.DecompilerBuilder;
 import com.wildermods.workspace.decomp.GradleDecompilerBuilder;
 import com.wildermods.workspace.decomp.WildermythDecompilerSetup;
 
+@DisableCachingByDefault(because = "This task is a one time workspace setup task and should not be cached")
 public class DecompileJarsTask extends DefaultTask {
 
 	@Input

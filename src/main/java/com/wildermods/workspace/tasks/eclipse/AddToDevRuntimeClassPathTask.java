@@ -1,4 +1,4 @@
-package com.wildermods.workspace.tasks;
+package com.wildermods.workspace.tasks.eclipse;
 
 import java.io.File;
 

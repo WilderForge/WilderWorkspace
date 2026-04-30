@@ -1,11 +1,16 @@
 package com.wildermods.workspace;
 
 import org.gradle.api.Project;
+import org.gradle.api.artifacts.ComponentMetadataContext;
+import org.gradle.api.artifacts.ComponentMetadataDetails;
+import org.gradle.api.artifacts.ComponentMetadataRule;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 import org.gradle.api.artifacts.ModuleDependency;
+import org.gradle.api.artifacts.dsl.ComponentMetadataHandler;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
+import org.gradle.api.artifacts.repositories.FlatDirectoryArtifactRepository;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
 import org.gradle.api.file.FileTree;
 import org.gradle.api.initialization.Settings;
@@ -18,6 +23,7 @@ import org.gradle.api.tasks.TaskProvider;
 import org.gradle.internal.classloader.VisitableURLClassLoader;
 import org.gradle.jvm.tasks.Jar;
 import org.gradle.plugins.ide.eclipse.EclipsePlugin;
+import org.gradle.plugins.ide.eclipse.model.AbstractClasspathEntry;
 import org.gradle.plugins.ide.eclipse.model.Classpath;
 import org.gradle.plugins.ide.eclipse.model.ClasspathEntry;
 import org.gradle.plugins.ide.eclipse.model.EclipseClasspath;
@@ -31,9 +37,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.wildermods.thrixlvault.utils.version.Version;
+import com.wildermods.workspace.dependency.CapabilityHandler;
 import com.wildermods.workspace.dependency.ProjectDependencyType;
 import com.wildermods.workspace.dependency.WWProjectDependency;
-import com.wildermods.workspace.tasks.AddToDevRuntimeClassPathTask;
 import com.wildermods.workspace.tasks.ClearLocalRuntimeTask;
 import com.wildermods.workspace.tasks.CopyLocalDependenciesToWorkspaceTask;
 import com.wildermods.workspace.tasks.DecompileJarsTask;
@@ -46,14 +53,27 @@ import com.wildermods.workspace.util.ExceptionUtil;
 import net.fabricmc.loom.build.nesting.NestableJarGenerationTask;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
+
+import javax.inject.Inject;
 import javax.net.ssl.HttpsURLConnection;
 
 import org.gradle.api.DefaultTask;
@@ -80,6 +100,7 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 	
 	/** The version of the WilderWorkspace plugin. */
 	public static final String VERSION = "@workspaceVersion@";
+	public static final String GAME_LIBS_REPO_NAME = "gameLibs";
 	
 	static {
 		JavaPlugin.class.arrayType();
@@ -91,7 +112,9 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 	private Configuration testCompileClasspath;
 	private Configuration fabricDep;
 	private Configuration fabricImpl;
+	private Configuration provider;
 	private Configuration retrieveJson;
+	private Configuration retrieveJsonProvider;
 	private Configuration jsonDependencies;
 	private Configuration resolvableImplementation;
 	private Configuration excludedFabricDeps;
@@ -126,38 +149,41 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 	 * @param project the Gradle project to apply the plugin to
 	 */
 	public void apply(Project project) {
-		
 		project.getLogger().log(LogLevel.INFO, "Initializing WilderWorkspace PROJECT plugin version " + VERSION);
 		try {
-
 			addPluginDependencies(project);
-			
+
 			WilderWorkspaceExtension extension = project.getExtensions().create("wilderWorkspace", WilderWorkspaceExtension.class);
 			extension.loadUserConfig();
 			
+			// Automatically use ext.gameVersion if present
+			if (project.hasProperty("gameVersion")) {
+				String gameVersion = project.property("gameVersion").toString();
+				extension.useDependency(gameVersion);
+				project.getLogger().info("Automatically using game version from ext.gameVersion: " + gameVersion);
+			}
+			
 			WWProjectContext context = new WWProjectContext(project, extension) {};
-			
-			setupRepositories(context);
-			
+
+			//Set up capabilities FIRST (Ivy + Maven repositories, scan, generate Ivy, etc.)
+			setupCapabilities(context);
+
 			project.getLogger().log(LogLevel.INFO, "SETTING UP CONFIGURATIONS ");
 			setupConfigurations(context);
-			
+
 			setupTasks(context);
-			
 			setupPostEvaluations(context);
-			
+
 			try {
 				addJsonDependencies(context);
-			}
-			catch(Throwable t) {
-				project.getLogger().error("Could not retrieve json dependencies. Build may fail or strange behavior may occur. 'dependencies' task will be incorrect.", t);
+			} catch (Throwable t) {
+				project.getLogger().error("Could not retrieve json dependencies...", t);
 				jsonDependencies.getAllDependencies().clear();
 			}
-		}
-		catch(Throwable t) {
+		} catch (Throwable t) {
 			project.getLogger().log(LogLevel.ERROR, t.getMessage(), t);
 			Throwable cause = ExceptionUtil.getInitialCause(t);
-			if(cause instanceof NoClassDefFoundError) {
+			if (cause instanceof NoClassDefFoundError) {
 				throw new LinkageError("Required class not in classpath.", t);
 			}
 			throw new LinkageError("Failed to apply WilderWorkspace " + VERSION, t);
@@ -224,22 +250,6 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		}));
 	}
 	
-	private void setupRepositories(WWProjectContext context) {
-		Project project = context.getProject();
-		RepositoryHandler repositories = project.getRepositories();
-		repositories.add(repositories.mavenLocal());
-		repositories.add(repositories.mavenCentral());
-		repositories.add(repositories.maven((repo) -> {
-			repo.setUrl("https://maven.fabricmc.net/");
-		}));
-		repositories.add(repositories.maven((repo) -> {
-			repo.setUrl("https://maven.wildermods.com/");
-		}));
-		repositories.add(repositories.maven((repo) -> {
-			repo.setUrl("https://central.sonatype.com/repository/maven-snapshots/");
-		}));
-	}
-	
 	/**
 	 * Sets up configurations required by the plugin.
 	 * <p>
@@ -277,6 +287,10 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			configuration.setCanBeResolved(true);
 		});
 		
+		retrieveJsonProvider = project.getConfigurations().create(ProjectDependencyType.retrieveJsonProvider.name(), configuration -> {
+			configuration.setCanBeConsumed(true);
+		});
+		
 		jsonDependencies = project.getConfigurations().create(ProjectDependencyType.jsonDependency.name(), config -> {
 			config.setCanBeResolved(true);
 			config.setCanBeConsumed(true);
@@ -288,13 +302,15 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		
 		compileOnly = project.getConfigurations().getByName(ProjectDependencyType.compileOnly.name());
 		
+		provider = project.getConfigurations().create(ProjectDependencyType.provider.name());
+		
 		compileClasspath = project.getConfigurations().getByName(ProjectDependencyType.compileClasspath.name());
 		compileClasspath.extendsFrom(nestTransitive);
 		compileClasspath.extendsFrom(fabricDep);
 		compileClasspath.extendsFrom(fabricImpl);
+		compileClasspath.extendsFrom(provider);
 		compileClasspath.extendsFrom(retrieveJson);
 		compileClasspath.extendsFrom(jsonDependencies);
-		//compileClasspath.extendsFrom(compileOnly);
 		
 		testCompileClasspath = project.getConfigurations().getByName(ProjectDependencyType.testCompileClasspath.name());
 		testCompileClasspath.extendsFrom(compileClasspath);
@@ -436,6 +452,7 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		
 		project.getTasks().register("regenEclipseRuns", GenerateRunConfigurationTask.class, task -> {
 			task.overwrite = true;
+			task.dependsOn("eclipse");
 		});
 		
 		project.getTasks().register("genEclipseRuns", GenerateRunConfigurationTask.class, task -> {
@@ -556,8 +573,92 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 	 * @param context the project context
 	 */
 	private void setupPostEvaluations(WWProjectContext context) {
-
 		setupEclipsePlugin(context);
+	}
+	
+	private void setupCapabilities(WWProjectContext context) {
+		try {
+			Project project = context.getProject();
+
+			// 1. Add flatDir for scanning
+			project.getRepositories().flatDir(repo -> {
+				repo.setName(GAME_LIBS_REPO_NAME);
+				repo.dir("bin/lib");
+				repo.dir("bin");
+			});
+
+			// 2. Scan and generate Ivy repo
+			CapabilityHandler handler = new CapabilityHandler(project);
+			Map<String, ModuleInfo> flatDirModuleInfo = scanFlatDirModules(project, handler);
+			project.getLogger().info("Found " + flatDirModuleInfo.size() + " flatDir modules");
+
+			generateIvyRepository(project, flatDirModuleInfo);
+
+			// 3. Add Ivy repository FIRST
+			addIvyRepository(project);
+
+			// 4. Add external Maven repositories (will come after Ivy)
+			RepositoryHandler repos = project.getRepositories();
+			repos.mavenLocal();
+			repos.mavenCentral();
+			repos.maven(repo -> repo.setUrl("https://maven.fabricmc.net/"));
+			repos.maven(repo -> repo.setUrl("https://maven.wildermods.com/"));
+			repos.maven(repo -> repo.setUrl("https://central.sonatype.com/repository/maven-snapshots/"));
+
+			// 5. Register Maven alias rules (conflict resolution)
+			registerMavenAliasRules(project, handler);
+
+			// 6. Add compileOnly dependencies with version
+			for (ModuleInfo info : flatDirModuleInfo.values()) {
+				project.getDependencies().add("compileOnly",
+					project.getDependencies().create(info.group() + ":" + info.artifact() + ":" + info.version())
+				);
+			}
+
+			// 7. Remove the temporary flatDir
+			project.getRepositories().remove(project.getRepositories().getByName(GAME_LIBS_REPO_NAME));
+
+		} catch (Exception e) {
+			throw new Error("Failed to set up local Ivy repository", e);
+		}
+	}
+	
+	private void addIvyRepository(Project project) {
+		Path ivyRepoDir = project.getBuildDir().toPath().resolve("ivy").toAbsolutePath();
+		// Construct explicit file: URL (double slash after colon)
+		String path = ivyRepoDir.toString().replace('\\', '/');
+		String repoUrl = path.startsWith("/") ? "file:" + path : "file:/" + path;
+		project.getLogger().info("Ivy repository URL: " + repoUrl);
+		project.getRepositories().ivy(repo -> {
+			repo.setName("WildermythGameIvy");
+			repo.setUrl(repoUrl);
+			repo.patternLayout(layout -> {
+				// Where Ivy descriptors are found
+				layout.ivy("[organisation]/[module]/ivy-[revision].xml");
+				// Where artifacts are found – matches the symlink location
+				layout.artifact("[organisation]/[module]/[revision]/[artifact]-[revision].[ext]");
+			});
+			repo.metadataSources(sources -> sources.ivyDescriptor());
+		});
+	}
+	
+	private void registerMavenAliasRules(Project project, CapabilityHandler handler) {
+		ComponentMetadataHandler components = project.getDependencies().getComponents();
+		
+		for (CapabilityHandler.CanonicalModule module : handler.modules.values()) {
+			String canonicalGroup = module.getGroup();
+			String canonicalName = module.getName();
+			
+			for (String mavenCoord : module.mavenAliases) {
+				String[] parts = mavenCoord.split(":", 2);
+				String mavenGroup = parts[0];
+				String mavenName = parts[1];
+				
+				components.withModule(mavenGroup + ":" + mavenName, MavenAliasCapabilityRule.class, spec -> {
+					spec.params(canonicalGroup, canonicalName);
+				});
+			}
+		}
 	}
 	
 	/**
@@ -573,12 +674,13 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		Project project = context.getProject();
 		WilderWorkspaceExtension extension = context.getWWExtension();	
 		
-		if(project.getPlugins().hasPlugin("eclipse")) {
+		/*
+		 if(project.getPlugins().hasPlugin("eclipse")) {
 			project.getTasks().register("addEclipseFabricJsonsToDevClasspath", AddToDevRuntimeClassPathTask.class, task -> {
 				task.setAddedDir(project.getRootDir().toPath().resolve("build").resolve("dev-runtime").toFile());
 
 			});
-		}
+		}*/
 		
 		project.afterEvaluate(proj -> {
 			if (project.getPlugins().hasPlugin("eclipse")) {
@@ -589,20 +691,76 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 				classpath.file(xmlFileContent -> {
 					xmlFileContent.getWhenMerged().add((classPathMerged) -> {
 						Classpath c = (Classpath) classPathMerged;
-						for (ClasspathEntry entry : c.getEntries()) {
-							project.getLogger().warn(entry.getClass().getCanonicalName());
-							if(entry instanceof Library) {
-								Library lib = (Library) entry;
-								
-								GameJars gameJar = GameJars.fromPathString(lib.getPath());
-								if(gameJar != null) {
-									project.getLogger().info("Found a game jar to add sources to: " + lib.getPath());
-									FileReference source = c.fileReference(Path.of(extension.getDecompDir()).resolve("decomp").resolve(gameJar.getJarName()).normalize().toAbsolutePath().toFile());
-									lib.setSourcePath(source);
-									project.getLogger().info("Setting sources of " + gameJar + " to " + source.getPath());
-								}
-							}
+						
+						Set<String> compilePaths = project.getConfigurations().getByName(ProjectDependencyType.compileClasspath.name()).getResolvedConfiguration().getResolvedArtifacts().stream()
+								.map(a -> a.getFile().getAbsoluteFile().toPath().normalize().toString())
+								.collect(Collectors.toSet());
+						
+						Set<String> pPaths = new HashSet<>();
+						{
+							Set<String> providerPaths = project.getConfigurations()
+									.getByName(ProjectDependencyType.provider.name())
+									.getResolvedConfiguration().getResolvedArtifacts()
+									.stream()
+									.map(a -> a.getFile().getAbsoluteFile().toPath().normalize().toString())
+									.collect(Collectors.toSet());
+							
+							Set<String> jsonProviderPaths = project.getConfigurations()
+									.getByName(ProjectDependencyType.retrieveJsonProvider.name())
+									.getResolvedConfiguration().getResolvedArtifacts()
+									.stream()
+									.map(a -> a.getFile().getAbsoluteFile().toPath().normalize().toString())
+									.collect(Collectors.toSet());
+							
+							
+							pPaths.addAll(providerPaths);
+							pPaths.addAll(jsonProviderPaths);
 						}
+						List<String> knotClasspath = new ArrayList<>();
+						
+						Iterator<ClasspathEntry> it = (Iterator<ClasspathEntry>)(Object)c.getEntries().iterator();
+						String path = null;
+						while(it.hasNext()) {
+							ClasspathEntry cpe = it.next();
+							if(cpe instanceof AbstractClasspathEntry entry) {
+								path = Path.of(entry.getPath()).toAbsolutePath().normalize().toString();
+								boolean isProvider = false;
+								
+								project.getLogger().warn(entry.getClass().getCanonicalName());
+								if(entry instanceof Library lib) {
+	
+									
+									
+									GameJars gameJar = GameJars.fromPathString(lib.getPath());
+									if(gameJar != null) {
+										project.getLogger().info("Found a game jar to add sources to: " + lib.getPath());
+										FileReference source = c.fileReference(Path.of(extension.getDecompDir()).resolve("decomp").resolve(gameJar.getJarName()).normalize().toAbsolutePath().toFile());
+										lib.setSourcePath(source);
+										project.getLogger().info("Setting sources of " + gameJar + " to " + source.getPath());
+									}
+									
+									if(pPaths.contains(lib.getPath())) {
+										project.getLogger().info("Provider dependency found: " + path);
+										continue;
+									}
+									
+									if(compilePaths.contains(lib.getPath())) {
+										project.getLogger().info("Ignoring compile only dlependency: " + path);
+										continue;
+									}
+								}
+								knotClasspath.add(path);
+							}
+							
+							if(path != null) {
+								project.getLogger().info("Not a provider dependency: " + path);
+							}
+							//it.remove();
+						}
+						
+						project.getExtensions().getExtraProperties()
+							.set("knotClasspath", String.join(File.pathSeparator, knotClasspath));
+						project.getLogger().info("Setting knot classpath to: " + knotClasspath);
 					});
 				});
 
@@ -621,8 +779,12 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 
 		project.getLogger().log(LogLevel.INFO, "Searching for json dependencies...");
 		
+		ArrayList<Dependency> dependencies = new ArrayList();
+		dependencies.addAll(retrieveJson.getAllDependencies());
+		dependencies.addAll(retrieveJsonProvider.getAllDependencies());
+		
 		// Iterate over dependencies in retrieveJson configuration
-		for (Dependency jsonDependency : retrieveJson.getAllDependencies()) {
+		for (Dependency jsonDependency : dependencies) {
 			project.getLogger().info("Found json dependency: " + jsonDependency);
 			// Construct the JSON file URL
 			String jsonUrlPath = jsonDependency.getGroup().replace('.', '/') + "/"
@@ -655,6 +817,9 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 					if(entry.getValue().isJsonArray()) {
 						JsonArray dependencyGroup = entry.getValue().getAsJsonArray();
 						addDependenciesToConfiguration(project, jsonDependency, dependencyGroup, jsonDependencies);
+						if(retrieveJsonProvider.getAllDependencies().contains(jsonDependency)) {
+							addDependenciesToConfiguration(project, jsonDependency, dependencyGroup, provider);
+						}
 					}
 				});
 				
@@ -665,6 +830,92 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			
 		project.getLogger().log(LogLevel.INFO, "Found all json dependnecies");
 
+	}
+	
+	private Map<String, ModuleInfo> scanFlatDirModules(Project project, CapabilityHandler handler) throws IOException {
+		Map<String, ModuleInfo> result = new HashMap<>();
+		FlatDirectoryArtifactRepository repo = (FlatDirectoryArtifactRepository)
+				project.getRepositories().getByName(GAME_LIBS_REPO_NAME);
+
+		for (File dir : repo.getDirs()) {
+			Path path = dir.toPath();
+			if (!Files.isDirectory(path)) continue;
+			project.getLogger().info("Found DIRECTORY, searching inside " + dir);
+			Files.list(path)
+				.filter(p -> p.toString().endsWith(".jar"))
+				.forEach(jar -> {
+					project.getLogger().info("Found JAR " + jar);
+					String fileName = jar.getFileName().toString();
+					String moduleName = fileName.substring(0, fileName.length() - 4); // remove .jar
+					handler.findModuleForFile(jar).ifPresent(module -> {
+						project.getLogger().info("Creating modules for " + jar);
+						module.fileAliases.stream()
+							.filter(alias -> alias.matches(jar))
+							.findFirst()
+							.flatMap(alias -> alias.extractVersion(jar))
+							.ifPresent(version -> {
+								Path relative = project.getRootDir().toPath().relativize(jar);
+								ModuleInfo m = new ModuleInfo(module.getGroup(), module.getName(), version, relative, project.getRootDir().toPath());
+								result.put(moduleName, m);
+								project.getLogger().info("Created module for " + jar + " (" + m + ")");
+							});
+					});
+				});
+		}
+		return result;
+	}
+	
+	private void generateIvyRepository(Project project, Map<String, ModuleInfo> moduleInfoMap) throws IOException {
+		Path ivyRepoRoot = project.getBuildDir().toPath().resolve("ivy");
+		// Clean previous
+		if (Files.exists(ivyRepoRoot)) {
+			Files.walk(ivyRepoRoot)
+				.sorted(Comparator.reverseOrder())
+				.map(Path::toFile)
+				.forEach(File::delete);
+		}
+		Files.createDirectories(ivyRepoRoot);
+
+		Path projectRoot = project.getRootDir().toPath();
+
+		for (ModuleInfo info : moduleInfoMap.values()) {
+			Path sourceJar = projectRoot.resolve(info.relativeJarPath()).normalize();
+			if (!Files.isRegularFile(sourceJar)) {
+				project.getLogger().warn("Skipping missing JAR: " + sourceJar);
+				continue;
+			}
+
+			// Module directory: [organisation]/[module]
+			Path moduleDir = ivyRepoRoot.resolve(info.group()).resolve(info.artifact());
+			Files.createDirectories(moduleDir);
+
+			// Ivy descriptor (no <artifact url>)
+			Path ivyFile = moduleDir.resolve("ivy-" + info.version() + ".xml");
+			String ivyContent = String.format(
+				"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+				"<ivy-module version=\"2.0\">\n" +
+				"	<info organisation=\"%s\" module=\"%s\" revision=\"%s\"/>\n" +
+				"	<publications>\n" +
+				"		<artifact name=\"%s\" type=\"jar\" ext=\"jar\"/>\n" +
+				"	</publications>\n" +
+				"</ivy-module>",
+				info.group(), info.artifact(), info.version(), info.artifact()
+			);
+			Files.writeString(ivyFile, ivyContent);
+
+			// Create symlink at standard Ivy layout: [organisation]/[module]/[revision]/[artifact]-[revision].jar
+			Path revisionDir = moduleDir.resolve(info.version().toString());
+			Files.createDirectories(revisionDir);
+			Path targetJar = revisionDir.resolve(info.artifact() + "-" + info.version() + ".jar");
+			Files.deleteIfExists(targetJar);
+			try {
+				Files.createSymbolicLink(targetJar, sourceJar);
+				project.getLogger().info("Created symlink: " + targetJar + " -> " + sourceJar);
+			} catch (UnsupportedOperationException | IOException e) {
+				project.getLogger().warn("Symlinks not supported, copying JAR instead.", e);
+				Files.copy(sourceJar, targetJar, StandardCopyOption.REPLACE_EXISTING);
+			}
+		}
 	}
 	
 	private boolean canResolveUrl(WWProjectContext context, String urlString) {
@@ -695,5 +946,27 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			return false;
 		}
 	}
+
+	// ---------- ComponentMetadataRule for Maven aliases ----------
+	public static abstract class MavenAliasCapabilityRule implements ComponentMetadataRule {
+		private final String canonicalGroup;
+		private final String canonicalName;
+
+		@Inject
+		public MavenAliasCapabilityRule(String canonicalGroup, String canonicalName) {
+			this.canonicalGroup = canonicalGroup;
+			this.canonicalName = canonicalName;
+		}
+
+		@Override
+		public void execute(ComponentMetadataContext context) {
+			ComponentMetadataDetails details = context.getDetails();
+			String version = details.getId().getVersion();
+			details.allVariants(variant -> variant.withCapabilities(caps ->
+				caps.addCapability(canonicalGroup, canonicalName, version)
+			));
+		}
+	}
 	
+	public static record ModuleInfo(String group, String artifact, Version version, Path relativeJarPath, Path projectRoot) implements Serializable {}
 }

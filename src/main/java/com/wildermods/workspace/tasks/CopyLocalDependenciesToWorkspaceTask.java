@@ -25,6 +25,7 @@ import org.gradle.api.logging.Logger;
 import org.gradle.api.logging.Logging;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.work.DisableCachingByDefault;
 
 import com.wildermods.masshash.exception.IntegrityException;
 import com.wildermods.masshash.exception.IntegrityProblem;
@@ -53,6 +54,7 @@ import com.wildermods.workspace.util.Platform;
  * It supports the game platforms as defined in {@link Platform} and allows for custom directories.
  * </p>
  */
+@DisableCachingByDefault(because = "This task is a one time workspace setup task and should not be cached")
 public class CopyLocalDependenciesToWorkspaceTask extends DefaultTask {
 	
 	private static final Logger LOGGER = Logging.getLogger(CopyLocalDependenciesToWorkspaceTask.class);

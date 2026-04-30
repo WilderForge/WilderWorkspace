@@ -10,6 +10,7 @@ import org.gradle.api.artifacts.ResolvedDependency;
 import org.gradle.api.file.DirectoryProperty;
 import org.gradle.api.tasks.OutputDirectory;
 import org.gradle.api.tasks.TaskAction;
+import org.gradle.work.DisableCachingByDefault;
 
 import com.google.gson.JsonObject;
 
@@ -28,6 +29,7 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.jar.JarOutputStream;
 
+@DisableCachingByDefault(because = "This task is a one time workspace setup task and should not be cached")
 public abstract class GenNestedMetadataJarsTask extends DefaultTask {
 
 	@OutputDirectory

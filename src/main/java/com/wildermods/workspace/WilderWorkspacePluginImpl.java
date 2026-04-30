@@ -56,12 +56,15 @@ import net.fabricmc.loom.build.nesting.NestableJarGenerationTask;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -147,40 +150,33 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 	 * @param project the Gradle project to apply the plugin to
 	 */
 	public void apply(Project project) {
-		
 		project.getLogger().log(LogLevel.INFO, "Initializing WilderWorkspace PROJECT plugin version " + VERSION);
 		try {
-
 			addPluginDependencies(project);
-			
+
 			WilderWorkspaceExtension extension = project.getExtensions().create("wilderWorkspace", WilderWorkspaceExtension.class);
 			extension.loadUserConfig();
-			
 			WWProjectContext context = new WWProjectContext(project, extension) {};
-			
-			setupRepositories(context);
-			
+
+			//Set up capabilities FIRST (Ivy + Maven repositories, scan, generate Ivy, etc.)
+			setupCapabilities(context);
+
 			project.getLogger().log(LogLevel.INFO, "SETTING UP CONFIGURATIONS ");
 			setupConfigurations(context);
-			
+
 			setupTasks(context);
-			
 			setupPostEvaluations(context);
-			
-			setupCapabilities(context);
-			
+
 			try {
 				addJsonDependencies(context);
-			}
-			catch(Throwable t) {
-				project.getLogger().error("Could not retrieve json dependencies. Build may fail or strange behavior may occur. 'dependencies' task will be incorrect.", t);
+			} catch (Throwable t) {
+				project.getLogger().error("Could not retrieve json dependencies...", t);
 				jsonDependencies.getAllDependencies().clear();
 			}
-		}
-		catch(Throwable t) {
+		} catch (Throwable t) {
 			project.getLogger().log(LogLevel.ERROR, t.getMessage(), t);
 			Throwable cause = ExceptionUtil.getInitialCause(t);
-			if(cause instanceof NoClassDefFoundError) {
+			if (cause instanceof NoClassDefFoundError) {
 				throw new LinkageError("Required class not in classpath.", t);
 			}
 			throw new LinkageError("Failed to apply WilderWorkspace " + VERSION, t);
@@ -244,22 +240,6 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 					throw new LinkageError("Could not resolve dependency", e);
 				}
 			}
-		}));
-	}
-	
-	private void setupRepositories(WWProjectContext context) {
-		Project project = context.getProject();
-		RepositoryHandler repositories = project.getRepositories();
-		repositories.add(repositories.mavenLocal());
-		repositories.add(repositories.mavenCentral());
-		repositories.add(repositories.maven((repo) -> {
-			repo.setUrl("https://maven.fabricmc.net/");
-		}));
-		repositories.add(repositories.maven((repo) -> {
-			repo.setUrl("https://maven.wildermods.com/");
-		}));
-		repositories.add(repositories.maven((repo) -> {
-			repo.setUrl("https://central.sonatype.com/repository/maven-snapshots/");
 		}));
 	}
 	
@@ -592,42 +572,83 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 	private void setupCapabilities(WWProjectContext context) {
 		try {
 			Project project = context.getProject();
-			CapabilityHandler handler = new CapabilityHandler(project);
-			RepositoryHandler repos = project.getRepositories();
-			repos.flatDir(repo -> {
-				repo.setName(GAME_LIBS_REPO_NAME);
-				repo.dir("libs");
-				repo.dir(".");
-			});
-			
-			var compileOnly = project.getConfigurations().getByName(JavaPlugin.COMPILE_ONLY_CONFIGURATION_NAME);
-			
-			// Add the first file tree: ./bin/*.jar
-			compileOnly.getDependencies().add(
-				project.getDependencies().create(
-					project.fileTree("./bin/", spec -> spec.include("*.jar"))
-				)
-			);
-			
-			// Add the second file tree: ./bin/lib/*.jar
-			compileOnly.getDependencies().add(
-				project.getDependencies().create(
-					project.fileTree("./bin/lib/", spec -> spec.include("*.jar"))
-				)
-			);
 
-			
+			// 1. Add flatDir for scanning
+			project.getRepositories().flatDir(repo -> {
+				repo.setName(GAME_LIBS_REPO_NAME);
+				repo.dir("bin/lib");
+				repo.dir("bin");
+			});
+
+			// 2. Scan and generate Ivy repo
+			CapabilityHandler handler = new CapabilityHandler(project);
 			Map<String, ModuleInfo> flatDirModuleInfo = scanFlatDirModules(project, handler);
-			registerRules(project, flatDirModuleInfo, handler);
-			
-			for (Map.Entry<String, ModuleInfo> entry : flatDirModuleInfo.entrySet()) {
-				ModuleInfo info = entry.getValue();
-				project.getDependencies().add("compileOnly", 
-					project.getDependencies().create(info.group + ":" + info.artifact + ":" + info.version));
+			project.getLogger().info("Found " + flatDirModuleInfo.size() + " flatDir modules");
+
+			generateIvyRepository(project, flatDirModuleInfo);
+
+			// 3. Add Ivy repository FIRST
+			addIvyRepository(project);
+
+			// 4. Add external Maven repositories (will come after Ivy)
+			RepositoryHandler repos = project.getRepositories();
+			repos.mavenLocal();
+			repos.mavenCentral();
+			repos.maven(repo -> repo.setUrl("https://maven.fabricmc.net/"));
+			repos.maven(repo -> repo.setUrl("https://maven.wildermods.com/"));
+			repos.maven(repo -> repo.setUrl("https://central.sonatype.com/repository/maven-snapshots/"));
+
+			// 5. Register Maven alias rules (conflict resolution)
+			registerMavenAliasRules(project, handler);
+
+			// 6. Add compileOnly dependencies with version
+			for (ModuleInfo info : flatDirModuleInfo.values()) {
+				project.getDependencies().add("compileOnly",
+					project.getDependencies().create(info.group() + ":" + info.artifact() + ":" + info.version())
+				);
 			}
+
+			// 7. Remove the temporary flatDir
+			project.getRepositories().remove(project.getRepositories().getByName(GAME_LIBS_REPO_NAME));
+
+		} catch (Exception e) {
+			throw new Error("Failed to set up local Ivy repository", e);
 		}
-		catch(Exception e) {
-			throw new Error(e);
+	}
+	
+	private void addIvyRepository(Project project) {
+		Path ivyRepoDir = project.getBuildDir().toPath().resolve("ivy").toAbsolutePath();
+		// Construct explicit file: URL (double slash after colon)
+		String repoUrl = "file:" + ivyRepoDir.toString();
+		project.getRepositories().ivy(repo -> {
+			repo.setName("WildermythGameIvy");
+			repo.setUrl(repoUrl);
+			repo.patternLayout(layout -> {
+				// Where Ivy descriptors are found
+				layout.ivy("[organisation]/[module]/ivy-[revision].xml");
+				// Where artifacts are found – matches the symlink location
+				layout.artifact("[organisation]/[module]/[revision]/[artifact]-[revision].[ext]");
+			});
+			repo.metadataSources(sources -> sources.ivyDescriptor());
+		});
+	}
+	
+	private void registerMavenAliasRules(Project project, CapabilityHandler handler) {
+		ComponentMetadataHandler components = project.getDependencies().getComponents();
+		
+		for (CapabilityHandler.CanonicalModule module : handler.modules.values()) {
+			String canonicalGroup = module.getGroup();
+			String canonicalName = module.getName();
+			
+			for (String mavenCoord : module.mavenAliases) {
+				String[] parts = mavenCoord.split(":", 2);
+				String mavenGroup = parts[0];
+				String mavenName = parts[1];
+				
+				components.withModule(mavenGroup + ":" + mavenName, MavenAliasCapabilityRule.class, spec -> {
+					spec.params(canonicalGroup, canonicalName);
+				});
+			}
 		}
 	}
 	
@@ -810,22 +831,24 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		for (File dir : repo.getDirs()) {
 			Path path = dir.toPath();
 			if (!Files.isDirectory(path)) continue;
+			project.getLogger().info("Found DIRECTORY, searching inside " + dir);
 			Files.list(path)
 				.filter(p -> p.toString().endsWith(".jar"))
 				.forEach(jar -> {
+					project.getLogger().info("Found JAR " + jar);
 					String fileName = jar.getFileName().toString();
 					String moduleName = fileName.substring(0, fileName.length() - 4); // remove .jar
 					handler.findModuleForFile(jar).ifPresent(module -> {
+						project.getLogger().info("Creating modules for " + jar);
 						module.fileAliases.stream()
 							.filter(alias -> alias.matches(jar))
 							.findFirst()
 							.flatMap(alias -> alias.extractVersion(jar))
 							.ifPresent(version -> {
-								result.put(moduleName, new ModuleInfo(
-									module.getGroup(),
-									module.getName(),
-									version
-								));
+								Path relative = project.getRootDir().toPath().relativize(jar);
+								ModuleInfo m = new ModuleInfo(module.getGroup(), module.getName(), version, relative, project.getRootDir().toPath());
+								result.put(moduleName, m);
+								project.getLogger().info("Created module for " + jar + " (" + m + ")");
 							});
 					});
 				});
@@ -833,23 +856,55 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		return result;
 	}
 	
-	private void registerRules(Project project, Map<String, ModuleInfo> flatDirModuleInfo, CapabilityHandler handler) {
-		ComponentMetadataHandler components = project.getDependencies().getComponents();
+	private void generateIvyRepository(Project project, Map<String, ModuleInfo> moduleInfoMap) throws IOException {
+		Path ivyRepoRoot = project.getBuildDir().toPath().resolve("ivy");
+		// Clean previous
+		if (Files.exists(ivyRepoRoot)) {
+			Files.walk(ivyRepoRoot)
+				.sorted(Comparator.reverseOrder())
+				.map(Path::toFile)
+				.forEach(File::delete);
+		}
+		Files.createDirectories(ivyRepoRoot);
 
-		// Rule for flatDir modules - passes the map via constructor
-		components.all(FlatDirCapabilityRule.class, spec -> {
-			spec.params(flatDirModuleInfo);
-		});
+		Path projectRoot = project.getRootDir().toPath();
 
-		// Rule for Maven aliases - passes group and artifact via constructor
-		for (CapabilityHandler.CanonicalModule module : handler.modules.values()) {
-			for (String mavenCoord : module.mavenAliases) {
-				String[] parts = mavenCoord.split(":", 2);
-				String group = parts[0];
-				String name = parts[1];
-				components.withModule(group + ":" + name, MavenAliasCapabilityRule.class, spec -> {
-					spec.params(module.getGroup(), module.getName());
-				});
+		for (ModuleInfo info : moduleInfoMap.values()) {
+			Path sourceJar = projectRoot.resolve(info.relativeJarPath()).normalize();
+			if (!Files.isRegularFile(sourceJar)) {
+				project.getLogger().warn("Skipping missing JAR: " + sourceJar);
+				continue;
+			}
+
+			// Module directory: [organisation]/[module]
+			Path moduleDir = ivyRepoRoot.resolve(info.group()).resolve(info.artifact());
+			Files.createDirectories(moduleDir);
+
+			// Ivy descriptor (no <artifact url>)
+			Path ivyFile = moduleDir.resolve("ivy-" + info.version() + ".xml");
+			String ivyContent = String.format(
+				"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+				"<ivy-module version=\"2.0\">\n" +
+				"	<info organisation=\"%s\" module=\"%s\" revision=\"%s\"/>\n" +
+				"	<publications>\n" +
+				"		<artifact name=\"%s\" type=\"jar\" ext=\"jar\"/>\n" +
+				"	</publications>\n" +
+				"</ivy-module>",
+				info.group(), info.artifact(), info.version(), info.artifact()
+			);
+			Files.writeString(ivyFile, ivyContent);
+
+			// Create symlink at standard Ivy layout: [organisation]/[module]/[revision]/[artifact]-[revision].jar
+			Path revisionDir = moduleDir.resolve(info.version().toString());
+			Files.createDirectories(revisionDir);
+			Path targetJar = revisionDir.resolve(info.artifact() + "-" + info.version() + ".jar");
+			Files.deleteIfExists(targetJar);
+			try {
+				Files.createSymbolicLink(targetJar, sourceJar);
+				project.getLogger().info("Created symlink: " + targetJar + " -> " + sourceJar);
+			} catch (UnsupportedOperationException | IOException e) {
+				project.getLogger().warn("Symlinks not supported, copying JAR instead.", e);
+				Files.copy(sourceJar, targetJar, StandardCopyOption.REPLACE_EXISTING);
 			}
 		}
 	}
@@ -882,31 +937,6 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			return false;
 		}
 	}
-	
-	// ---------- ComponentMetadataRule for FlatDir aliases ----------
-	public static abstract class FlatDirCapabilityRule implements ComponentMetadataRule {
-		private final Map<String, ModuleInfo> moduleInfoMap;
-
-		@Inject
-		public FlatDirCapabilityRule(Map<String, ModuleInfo> moduleInfoMap) {
-			this.moduleInfoMap = moduleInfoMap;
-		}
-
-		@Override
-		public void execute(ComponentMetadataContext context) {
-			ComponentMetadataDetails details = context.getDetails();
-			ModuleVersionIdentifier id = details.getId();
-
-			if (!id.getGroup().isEmpty()) return;
-
-			ModuleInfo info = moduleInfoMap.get(id.getName());
-			if (info == null) return;
-
-			details.allVariants(variant -> variant.withCapabilities(caps ->
-				caps.addCapability(info.group, info.artifact, info.version.toString())
-			));
-		}
-	}
 
 	// ---------- ComponentMetadataRule for Maven aliases ----------
 	public static abstract class MavenAliasCapabilityRule implements ComponentMetadataRule {
@@ -929,5 +959,5 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		}
 	}
 	
-	public static record ModuleInfo(String group, String artifact, Version version) {}
+	public static record ModuleInfo(String group, String artifact, Version version, Path relativeJarPath, Path projectRoot) implements Serializable {}
 }

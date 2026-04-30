@@ -106,18 +106,20 @@ public class CapabilityHandler {
 		}
 
 		public static FileAlias fromJson(CanonicalModule module, JsonObject json, Project project) {
+			Path baseDir = project.getRootDir().toPath();
+	
 			List<Path> dirs = json.getAsJsonArray("location").asList().stream()
-					.map(e -> Path.of(e.getAsString()))
-					.collect(Collectors.toList());
-
+			.<Path>map(e -> baseDir.resolve(e.getAsString()).normalize())
+			.collect(Collectors.toList());
+	
 			List<Pattern> patterns = json.getAsJsonArray("name").asList().stream()
-					.map(e -> Pattern.compile(e.getAsString()))
-					.collect(Collectors.toList());
-
+			.map(e -> Pattern.compile(e.getAsString()))
+			.collect(Collectors.toList());
+	
 			List<VersionExtractor> extractors = json.getAsJsonArray("version").asList().stream()
-					.map(e -> createVersionExtractor(module, e.getAsJsonObject(), project))
-					.collect(Collectors.toList());
-
+			.map(e -> createVersionExtractor(module, e.getAsJsonObject(), project))
+			.collect(Collectors.toList());
+	
 			return new FileAlias(dirs, patterns, extractors);
 		}
 
@@ -175,23 +177,33 @@ public class CapabilityHandler {
 		
 		switch (type) {
 			case "derived":
-				project.getLogger().info(module + ": derived - " + value);
+				project.getLogger().info("Creating " + module + ": derived - " + value);
 				Pattern pattern = Pattern.compile(value);
-				return file -> pattern.matcher(file.getFileName().toString()).results()
-						.findFirst().map(m -> m.group(1));
-			case "literal":
-				project.getLogger().info(module + ": literal - " + value);
-				return file -> Optional.of(value);
-			case "projectVar":
-				project.getLogger().info(module + ": projectVar - " + value);
-				project.getExtensions().getExtraProperties().getProperties().forEach((key, val) -> {
-					project.getLogger().info(module + ": EXTRA-PROPERTIES - KEY:" + key + " - VALUE: " + val);
-				});
-				return file -> Optional.ofNullable(project.getExtensions().getExtraProperties().get("gameVersion"))
-						.map(Object::toString);
-			case "method":
-				project.getLogger().info(module + ": method - " + value);
 				return file -> {
+					project.getLogger().info("Executing " + module + ": derived - " + value);
+					return pattern.matcher(file.getFileName().toString()).results()
+						.findFirst().map(m -> m.group(1));
+				};
+			case "literal":
+				project.getLogger().info("Creating " + module + ": literal - " + value);
+				return file -> {
+					project.getLogger().info("Executing " + module + ": literal - " + value);
+					return Optional.of(value);
+				};
+			case "projectVar":
+				project.getLogger().info("Creating " + module + ": projectVar - " + value);
+				project.getExtensions().getExtraProperties().getProperties().forEach((key, val) -> {
+					project.getLogger().info("Creating [debug] " + module + ": EXTRA-PROPERTIES - KEY:" + key + " - VALUE: " + val);
+				});
+				return file -> {
+					project.getLogger().info("Executing " + module + ": projectVar - " + value);
+					return Optional.ofNullable(project.getExtensions().getExtraProperties().get("gameVersion"))
+						.map(Object::toString);
+				};
+			case "method":
+				project.getLogger().info("Creating " + module + ": method - " + value);
+				return file -> {
+					project.getLogger().info("Executing " + module + ": method - " + value);
 					try {
 						String clazzName = rule.get("class").getAsString();
 						
@@ -201,14 +213,15 @@ public class CapabilityHandler {
 						m.invoke(null);
 						return Optional.of((String)m.invoke(null));
 					}
-					catch(Exception e) {
+					catch(Exception | LinkageError e) {
 						e.printStackTrace();
 					}
 					return Optional.empty();
 				};
 			case "assert":
-				project.getLogger().info(module + ": assert - " + value);
+				project.getLogger().info("Creating " + module + ": assert - " + value);
 				return file -> {
+					project.getLogger().info("Executing " + module + ": assert - " + value);
 					throw new AssertionError(value);
 				};
 			default:

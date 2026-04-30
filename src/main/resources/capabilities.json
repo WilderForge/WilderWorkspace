@@ -3,7 +3,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"annotations-.*\\.jar"
@@ -30,7 +30,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"campskeleton-.*\\.jar"
@@ -51,7 +51,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"commons-collections.*\\.jar"
@@ -78,7 +78,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"commons-io.*\\.jar"
@@ -99,7 +99,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"commons-math.*\\.jar"
@@ -131,7 +131,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"devvotes-client.*\\.jar"
@@ -152,7 +152,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"eos_jni.*\\.jar"
@@ -173,7 +173,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"fmod-jni.*\\.jar"
@@ -201,7 +201,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"gameEngine.*\\.jar"
@@ -222,7 +222,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"gdx-\\d.*\\.jar"
@@ -243,7 +243,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"gdx-backend-lwjgl3-.*\\.jar"
@@ -264,7 +264,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"gdx-controllers-core-.*\\.jar"
@@ -285,7 +285,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"gdx-controllers-desktop-.*\\.jar"
@@ -306,7 +306,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"gdx-controllerutils-scene2d-.*\\.jar"
@@ -327,7 +327,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"gdx-freetype-\\d.*\\.jar"
@@ -348,7 +348,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"gdx-freetype-platform-.*-natives-desktop\\.jar"
@@ -369,7 +369,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"gdx-jnigen-loader-.*\\.jar"
@@ -390,7 +390,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"gdx-platform-.*-natives-desktop\\.jar"
@@ -411,7 +411,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"gog_jni.*\\.jar"
@@ -432,7 +432,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"jamepad-.*\\.jar"
@@ -461,7 +461,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"jlayer-.*\\.jar"
@@ -482,7 +482,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"joise-.*\\.jar"
@@ -503,7 +503,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"jorbis-.*\\.jar"
@@ -524,7 +524,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"lwjgl-\\d*\\.\\d*\\.\\d*\\.jar"
@@ -551,7 +551,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"lwjgl-glfw-\\d*\\.\\d*\\.\\d*\\.jar"
@@ -572,7 +572,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"lwjgl-jemalloc-\\d*\\.\\d*\\.\\d*\\.jar"
@@ -593,7 +593,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"lwjgl-nfd.jar"
@@ -614,7 +614,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"lwjgl-openal-\\d*\\.\\d*\\.\\d*\\.jar"
@@ -635,7 +635,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"lwjgl-opengl-\\d*\\.\\d*\\.\\d*\\.jar"
@@ -656,7 +656,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"lwjgl-stb-\\d*\\.\\d*\\.\\d*\\.jar"
@@ -677,7 +677,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"^netty-all-\\d+(?:\\.\\d+){0,2}(?:\\.Final)?\\.jar$"
@@ -698,7 +698,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"power-voroni-diagram-.*\\.jar"
@@ -719,7 +719,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"server-.*\\.jar"
@@ -740,7 +740,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"steamworks4j-.*\\.jar"
@@ -757,7 +757,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./libs"
+				"./bin/lib"
 			],
 			"name": [
 				"^tween-engine-api(?:-\\d+(?:\\.\\d+){0,2})?\\.jar$"
@@ -790,7 +790,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./"
+				"./bin"
 			],
 			"name": [
 				"wildermyth\\.jar"
@@ -811,7 +811,7 @@
 		{
 			"type": "file",
 			"location": [
-				"./"
+				"./bin"
 			],
 			"name": [
 				"scratchpad\\.jar"

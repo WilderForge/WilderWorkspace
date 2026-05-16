@@ -39,6 +39,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.wildermods.thrixlvault.utils.version.Version;
 import com.wildermods.workspace.dependency.CapabilityHandler;
+import com.wildermods.workspace.dependency.CapabilityHandler.SourceStrategy;
 import com.wildermods.workspace.dependency.ProjectDependencyType;
 import com.wildermods.workspace.dependency.WWProjectDependency;
 import com.wildermods.workspace.tasks.ClearLocalRuntimeTask;
@@ -53,6 +54,7 @@ import com.wildermods.workspace.util.ExceptionUtil;
 import net.fabricmc.loom.build.nesting.NestableJarGenerationTask;
 
 import java.io.File;
+import java.io.IOError;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Serializable;
@@ -101,6 +103,7 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 	/** The version of the WilderWorkspace plugin. */
 	public static final String VERSION = "@workspaceVersion@";
 	public static final String GAME_LIBS_REPO_NAME = "gameLibs";
+	public static final String DECOMP_MODULES = "wildermyth.decompilationModules";
 	
 	static {
 		JavaPlugin.class.arrayType();
@@ -375,7 +378,6 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		});
 		
 		project.getTasks().register("decompileJars", DecompileJarsTask.class, task -> {
-			task.setCompiledDir(extension.getGameDestDir());
 			task.setDecompDir(extension.getDecompDir());
 		});
 		
@@ -617,6 +619,43 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 
 			// 7. Remove the temporary flatDir
 			project.getRepositories().remove(project.getRepositories().getByName(GAME_LIBS_REPO_NAME));
+			
+			// 8. After project is evaluated, set project property
+			project.afterEvaluate((p) -> {
+				Set<Path> resolvedJarPaths = project.getConfigurations()
+						.getByName(ProjectDependencyType.compileClasspath.name())
+						.getResolvedConfiguration()
+						.getResolvedArtifacts()
+						.stream()
+						.map(artifact -> {
+							try {
+								return artifact.getFile().toPath().toRealPath().normalize();
+							} catch (IOException e) {
+								return artifact.getFile().toPath().normalize();
+							}
+						})
+						.collect(Collectors.toSet());
+
+					Map<String, ModuleInfo> filteredModules = new HashMap<>();
+					for (Map.Entry<String, ModuleInfo> entry : flatDirModuleInfo.entrySet()) {
+						Path jarPath;
+						try {
+							jarPath = project.getRootDir().toPath().resolve(entry.getValue().relativeJarPath()).toRealPath().normalize();
+						}
+						catch(IOException e) {
+							throw new IOError(e);
+						}
+						
+						if (resolvedJarPaths.contains(jarPath)) {
+							filteredModules.put(entry.getKey(), entry.getValue());
+						} else {
+							project.getLogger().info("Excluding from decompilation (not in classpath): " + jarPath);
+						}
+					}
+					project.getExtensions().getExtraProperties().set(DECOMP_MODULES, filteredModules);
+					project.getLogger().info("Filtered decompilation modules: " + filteredModules.size() + " (from " + flatDirModuleInfo.size() + " total)");
+			});
+			project.getExtensions().getExtraProperties().set(DECOMP_MODULES, flatDirModuleInfo);
 
 		} catch (Exception e) {
 			throw new Error("Failed to set up local Ivy repository", e);
@@ -685,8 +724,13 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		project.afterEvaluate(proj -> {
 			if (project.getPlugins().hasPlugin("eclipse")) {
 
+				Map<String, ModuleInfo> modules = (Map<String, ModuleInfo>) proj.getExtensions().getExtraProperties().get(DECOMP_MODULES);
 				EclipseModel eclipseModel = proj.getExtensions().getByType(EclipseModel.class);
 				EclipseClasspath classpath = eclipseModel.getClasspath();
+				
+				if (modules == null || modules.isEmpty()) {
+					project.getLogger().warn("No decompilation modules found; source attachments will be missing. Null: " + (modules == null));
+				}
 				
 				classpath.file(xmlFileContent -> {
 					xmlFileContent.getWhenMerged().add((classPathMerged) -> {
@@ -719,24 +763,56 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 						List<String> knotClasspath = new ArrayList<>();
 						
 						Iterator<ClasspathEntry> it = (Iterator<ClasspathEntry>)(Object)c.getEntries().iterator();
-						String path = null;
+						Path path = null;
 						while(it.hasNext()) {
 							ClasspathEntry cpe = it.next();
 							if(cpe instanceof AbstractClasspathEntry entry) {
-								path = Path.of(entry.getPath()).toAbsolutePath().normalize().toString();
+								String pathStr = entry.getPath();
+								path = Path.of(entry.getPath()).toAbsolutePath().normalize();
 								boolean isProvider = false;
-								
+
 								project.getLogger().warn(entry.getClass().getCanonicalName());
 								if(entry instanceof Library lib) {
 	
-									
-									
-									GameJars gameJar = GameJars.fromPathString(lib.getPath());
-									if(gameJar != null) {
-										project.getLogger().info("Found a game jar to add sources to: " + lib.getPath());
-										FileReference source = c.fileReference(Path.of(extension.getDecompDir()).resolve("decomp").resolve(gameJar.getJarName()).normalize().toAbsolutePath().toFile());
-										lib.setSourcePath(source);
-										project.getLogger().info("Setting sources of " + gameJar + " to " + source.getPath());
+									if(modules != null) {
+										ModuleInfo module = null;
+										for(ModuleInfo info : modules.values()) {
+											Path jarPath = project.getRootDir().toPath().resolve(info.relativeJarPath()).normalize();
+											if(jarPath.equals(path)) {
+												module = info;
+												break;
+											}
+										}
+										if (module != null) {
+											SourceStrategy strategy = module.sourceStrategy;
+											if ("decompile".equals(strategy.type)) {
+												Path decompRoot = Path.of(extension.getDecompDir());
+												Path sourcePath = decompRoot.resolve("decomp").resolve(path.getFileName());
+												
+												if(Files.exists(sourcePath)) {
+													FileReference sourceRef = c.fileReference(sourcePath.toFile());
+													lib.setSourcePath(sourceRef);
+													project.getLogger().info("Attached decompiled sources for " + pathStr + " -> " + sourcePath);
+												}
+												else {
+													project.getLogger().warn("Decompiled sources not found for " + pathStr + " expected at " + sourcePath);
+												}
+											}
+											else if("file".equals(strategy.type)) {
+												Path sourcePath = project.getRootDir().toPath().resolve(strategy.path).normalize();
+												if (Files.exists(sourcePath)) {
+													FileReference sourceRef = c.fileReference(sourcePath.toFile());
+													lib.setSourcePath(sourceRef);
+													project.getLogger().info("Attached source file for " + pathStr + " -> " + sourcePath);
+												} 
+												else {
+													project.getLogger().warn("Source file not found: " + sourcePath);
+												}
+											}
+											else if ("skip".equals(strategy.type)) {
+												project.getLogger().info("Skipping source attachment for " + pathStr);
+											}
+										}
 									}
 									
 									if(pPaths.contains(lib.getPath())) {
@@ -749,7 +825,7 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 										continue;
 									}
 								}
-								knotClasspath.add(path);
+								knotClasspath.add(pathStr);
 							}
 							
 							if(path != null) {
@@ -850,15 +926,23 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 					handler.findModuleForFile(jar).ifPresent(module -> {
 						project.getLogger().info("Creating modules for " + jar);
 						module.fileAliases.stream()
-							.filter(alias -> alias.matches(jar))
-							.findFirst()
-							.flatMap(alias -> alias.extractVersion(jar))
-							.ifPresent(version -> {
-								Path relative = project.getRootDir().toPath().relativize(jar);
-								ModuleInfo m = new ModuleInfo(module.getGroup(), module.getName(), version, relative, project.getRootDir().toPath());
-								result.put(moduleName, m);
-								project.getLogger().info("Created module for " + jar + " (" + m + ")");
-							});
+						.filter(alias -> alias.matches(jar))
+						.findFirst()
+						.flatMap(alias -> alias.extractVersion(jar, project))  // now returns Optional<VersionResult>
+						.ifPresent(res -> {
+							Path relative = project.getRootDir().toPath().relativize(jar);
+							ModuleInfo m = new ModuleInfo(
+								module.getGroup(),
+								module.getName(),
+								res.version,
+								relative,
+								project.getRootDir().toPath(),
+								res.sourceStrategy		// pass the source strategy
+							);
+							result.put(moduleName, m);
+							project.getLogger().info("Created module for " + jar + " (" + m + ")");
+							project.getLogger().info("Expecting source strategy: " + res.sourceStrategy.type);
+						});
 					});
 				});
 		}
@@ -968,5 +1052,5 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		}
 	}
 	
-	public static record ModuleInfo(String group, String artifact, Version version, Path relativeJarPath, Path projectRoot) implements Serializable {}
+	public static record ModuleInfo(String group, String artifact, Version version, Path relativeJarPath, Path projectRoot, SourceStrategy sourceStrategy) implements Serializable {}
 }

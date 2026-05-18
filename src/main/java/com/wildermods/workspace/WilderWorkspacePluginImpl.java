@@ -1,6 +1,7 @@
 package com.wildermods.workspace;
 
 import org.gradle.api.Project;
+import org.gradle.api.Task;
 import org.gradle.api.artifacts.ComponentMetadataContext;
 import org.gradle.api.artifacts.ComponentMetadataDetails;
 import org.gradle.api.artifacts.ComponentMetadataRule;
@@ -537,6 +538,14 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			});
 		});
 		
+		project.afterEvaluate(p -> {
+		    Task nestGenTask = p.getTasks().findByName("generateNestableJars");
+		    if (nestGenTask instanceof NestableJarGenerationTask) {
+		        NestableJarGenerationTask task = (NestableJarGenerationTask) nestGenTask;
+		        task.getUncompressNestedJars().set(true);
+		    }
+		});
+		
 		project.getTasks().named("assemble").configure(assemble -> assemble.dependsOn(nestJarsTask));
 		project.getTasks().named("publish").configure(publish -> {
 			publish.dependsOn(project.getTasks().named("assemble"));
@@ -546,6 +555,8 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		if(project.getPlugins().hasPlugin("eclipse")) {
 			project.getTasks().named("eclipseClasspath").configure(eclipse -> eclipse.dependsOn(genNestJars));
 		}
+		
+		
 		
 		project.getTasks().named("jar", Jar.class, jar -> {
 			jar.getOutputs().upToDateWhen(t -> false);

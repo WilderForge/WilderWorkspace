@@ -79,6 +79,7 @@ import javax.inject.Inject;
 import javax.net.ssl.HttpsURLConnection;
 
 import org.gradle.api.DefaultTask;
+import org.gradle.api.GradleException;
 import org.gradle.api.Plugin;
 
 /**
@@ -366,15 +367,30 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		Project project = context.getProject();
 		WilderWorkspaceExtension extension = context.getWWExtension();
 		
+		project.getTasks().register("prepare", task -> {
+			task.dependsOn("copyLocalDependenciesToWorkspace");
+		});
+		
+		TaskProvider<?> checkGame = project.getTasks().register("checkGame", task -> {
+			task.doLast(t -> {
+				Path binLib = project.getRootDir().toPath().resolve("bin/lib");
+				if (!Files.isDirectory(binLib)) {
+					throw new GradleException(
+						"Game not found. Please run the 'prepare' task first: ./gradlew prepare"
+					);
+				}
+			});
+		});
+		
 		project.getTasks().register("copyLocalDependenciesToWorkspace", CopyLocalDependenciesToWorkspaceTask.class, task -> {
 			task.setPlatform(extension.getPlatform());
 			task.setPatchline(extension.getPatchline());
 			task.setDestDir(extension.getGameDestDir());
-			task.setPlatform(extension.getPlatform());
 			task.setSteamUser(extension.getSteamUser());
 			task.finalizedBy(project.getTasks().getByName("copyProjectDependencies"));
 			task.getOutputs().cacheIf(t -> false);
 			task.getOutputs().upToDateWhen(t -> false);
+			task.mustRunAfter(project.getTasks().getByName("checkGame"));
 		});
 		
 		project.getTasks().register("decompileJars", DecompileJarsTask.class, task -> {
@@ -389,11 +405,10 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		project.getTasks().register("setupDecompWorkspace", DefaultTask.class, task -> {
 			task.getOutputs().upToDateWhen(taskOutput -> false);
 			task.getOutputs().cacheIf(taskOutput -> false);
-			
+			task.dependsOn(checkGame);
 			task.dependsOn(project.getTasks().getByName("copyLocalDependenciesToWorkspace"));
 			task.dependsOn(project.provider(() -> {
-				DecompileJarsTask decompileTask = (DecompileJarsTask)project.getTasks().named("decompileJars").get();
-
+				DecompileJarsTask decompileTask = (DecompileJarsTask) project.getTasks().named("decompileJars").get();
 				return decompileTask;
 			}));
 
@@ -776,20 +791,29 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 	
 									if(modules != null) {
 										ModuleInfo module = null;
-										for(ModuleInfo info : modules.values()) {
-											Path jarPath = project.getRootDir().toPath().resolve(info.relativeJarPath()).normalize();
-											if(jarPath.equals(path)) {
-												module = info;
-												break;
+										for (ModuleInfo info : modules.values()) {
+											try {
+												Path jarPath = project.getRootDir().toPath()
+														.resolve(info.relativeJarPath())
+														.toRealPath()
+														.normalize();
+												Path libPath = path.toRealPath().normalize();
+												if (jarPath.equals(libPath)) {
+													module = info;
+													break;
+												}
+											} catch (IOException e) {
+												project.getLogger().debug("failed to resolve source jar for JAR", e);
 											}
 										}
-										if (module != null) {
-											SourceStrategy strategy = module.sourceStrategy;
+										if(module != null) {
+											SourceStrategy strategy = module.sourceStrategy();
 											if ("decompile".equals(strategy.type)) {
 												Path decompRoot = Path.of(extension.getDecompDir());
-												Path sourcePath = decompRoot.resolve("decomp").resolve(path.getFileName());
-												
-												if(Files.exists(sourcePath)) {
+												// Get the original JAR file name (e.g., "wildermyth.jar")
+												Path originalJarName = module.relativeJarPath().getFileName();
+												Path sourcePath = decompRoot.resolve("decomp").resolve(originalJarName);
+												if (Files.exists(sourcePath)) {
 													FileReference sourceRef = c.fileReference(sourcePath.toFile());
 													lib.setSourcePath(sourceRef);
 													project.getLogger().info("Attached decompiled sources for " + pathStr + " -> " + sourcePath);
@@ -1050,6 +1074,10 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 				caps.addCapability(canonicalGroup, canonicalName, version)
 			));
 		}
+	}
+	
+	private boolean isWorkspaceInitialized(Project project) {
+		return Files.exists(project.getLayout().getBuildDirectory().getAsFile().get().toPath().resolve("bin").resolve("lib"));
 	}
 	
 	public static record ModuleInfo(String group, String artifact, Version version, Path relativeJarPath, Path projectRoot, SourceStrategy sourceStrategy) implements Serializable {}

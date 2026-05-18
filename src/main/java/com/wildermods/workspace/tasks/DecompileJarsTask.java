@@ -2,50 +2,39 @@ package com.wildermods.workspace.tasks;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Map;
+
 import org.gradle.api.DefaultTask;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.work.DisableCachingByDefault;
 
+import com.wildermods.workspace.WilderWorkspacePluginImpl;
+import com.wildermods.workspace.WilderWorkspacePluginImpl.ModuleInfo;
 import com.wildermods.workspace.decomp.DecompilerBuilder;
 import com.wildermods.workspace.decomp.GradleDecompilerBuilder;
 import com.wildermods.workspace.decomp.WildermythDecompilerSetup;
 
 @DisableCachingByDefault(because = "This task is a one time workspace setup task and should not be cached")
 public class DecompileJarsTask extends DefaultTask {
-
-	@Input
-	private String compiledDir;
 	
 	@Input
 	private String decompDir;
 	
 	@TaskAction
 	public void decompile() throws IOException {
+		// Retrieve the module map from the project's extra properties
+		Object modulesObj = getProject().getExtensions().getExtraProperties().get(WilderWorkspacePluginImpl.DECOMP_MODULES);
+		if (!(modulesObj instanceof Map)) {
+			throw new IllegalStateException("No module map found for decompilation. Ensure setupCapabilities ran first.");
+		}
+		@SuppressWarnings("unchecked")
+		Map<String, ModuleInfo> modules = (Map<String, ModuleInfo>) modulesObj;
+
 		DecompilerBuilder b = new GradleDecompilerBuilder(this);
-		WildermythDecompilerSetup setup = new WildermythDecompilerSetup(b);
-		Path compiledDir = Path.of(this.compiledDir);
-		Path decompDir = Path.of(this.decompDir);
-		setup.decompile(compiledDir, decompDir);
-		
-	}
-
-    /**
-     * Gets the directory containing the compiled JAR files.
-     * 
-     * @return the compiled directory path as a string
-     */
-	public String getCompiledDir() {
-		return compiledDir;
-	}
-
-    /**
-     * Sets the directory containing the compiled JAR files.
-     * 
-     * @param compiledDir the compiled directory path as a string
-     */
-	public void setCompiledDir(String compiledDir) {
-		this.compiledDir = compiledDir;
+		WildermythDecompilerSetup setup = new WildermythDecompilerSetup(b, getProject(), modules);
+		Path decompPath = Path.of(this.decompDir);
+		setup.decompile(decompPath);
 	}
 
 	 /**

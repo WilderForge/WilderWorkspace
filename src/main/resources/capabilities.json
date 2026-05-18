@@ -356,11 +356,21 @@
 			"version": [
 				{
 					"type": "derived",
-					"value": "^gdx-freetype-platform-?(.*?)\\.jar"
+					"value": "^gdx-freetype-platform-?(.*?)\\.jar",
+					"source": [
+						{
+							"type":"skip"
+						}
+					]
 				},
 				{
 					"type": "literal",
-					"value": "0.0.0+unknown"
+					"value": "0.0.0+unknown",
+					"source": [
+						{
+							"type":"skip"
+						}
+					]
 				}
 			]
 		}
@@ -398,11 +408,21 @@
 			"version": [
 				{
 					"type": "derived",
-					"value": "^gdx-platform-?(.*?)\\.jar"
+					"value": "^gdx-platform-?(.*?)\\.jar",
+					"source": [
+						{
+							"type":"skip"
+						}
+					]
 				},
 				{
 					"type": "literal",
-					"value": "0.0.0+unknown"
+					"value": "0.0.0+unknown",
+					"source": [
+						{
+							"type":"skip"
+						}
+					]
 				}
 			]
 		}
@@ -765,16 +785,42 @@
 			"version": [
 				{
 					"type": "derived",
-					"value": "^tween-engine-api-?(.*?)\\.jar"
+					"value": "^tween-engine-api-?(.*?)\\.jar",
+					"source": [
+						{
+							"type": "decompile" 
+						}
+					]
 				},
 				{
 					"type": "method",
 					"value": "getTweenVersion",
-					"class": "com.wildermods.workspace.dependency.CapabilityHandler"
+					"class": "com.wildermods.workspace.dependency.CapabilityHandler",
+					"source": [
+						{
+							"type": "decompile",
+							"exclude": [
+								"6.3.3"
+							]
+						},
+						{
+							"type": "file",
+							"path": "./tween-engine-api-sources.jar"
+						}
+					]
 				},
 				{
 					"type": "literal",
-					"value": "6.3.3"
+					"value": "6.3.3",
+					"source": [
+						{
+							"type": "file",
+							"path": "./tween-engine-api-sources.jar"
+						},
+						{
+							"type": "skip"
+						}
+					]
 				}
 			]
 		},

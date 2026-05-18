@@ -12,13 +12,13 @@ public class WilderWorkspaceJavadocProvider extends TinyJavadocProvider {
 	
 	private final TinyJavadocProvider parent;
 
-	public WilderWorkspaceJavadocProvider(File tinyFile) {
-		super(tinyFile);
+	public WilderWorkspaceJavadocProvider(File tinyFile, String runtimeNamespace) {
+		super(tinyFile, runtimeNamespace);
 		if(tinyFile == null) {
 			parent = null;
 		}
 		else {
-			parent = new TinyJavadocProvider(tinyFile);
+			parent = new TinyJavadocProvider(tinyFile, runtimeNamespace);
 		}
 	}
 

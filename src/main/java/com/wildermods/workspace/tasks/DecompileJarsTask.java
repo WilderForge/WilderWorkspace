@@ -10,7 +10,8 @@ import org.gradle.api.tasks.TaskAction;
 import org.gradle.work.DisableCachingByDefault;
 
 import com.wildermods.workspace.WilderWorkspacePluginImpl;
-import com.wildermods.workspace.WilderWorkspacePluginImpl.ModuleInfo;
+import com.wildermods.workspace.capabilities.GradleProject;
+import com.wildermods.workspace.capabilities.ModuleInfo;
 import com.wildermods.workspace.decomp.DecompilerBuilder;
 import com.wildermods.workspace.decomp.GradleDecompilerBuilder;
 import com.wildermods.workspace.decomp.WildermythDecompilerSetup;
@@ -32,7 +33,7 @@ public class DecompileJarsTask extends DefaultTask {
 		Map<String, ModuleInfo> modules = (Map<String, ModuleInfo>) modulesObj;
 
 		DecompilerBuilder b = new GradleDecompilerBuilder(this);
-		WildermythDecompilerSetup setup = new WildermythDecompilerSetup(b, getProject(), modules);
+		WildermythDecompilerSetup setup = new WildermythDecompilerSetup(b, new GradleProject(getProject()), modules);
 		Path decompPath = Path.of(this.decompDir);
 		setup.decompile(decompPath);
 	}

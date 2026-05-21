@@ -38,9 +38,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import com.wildermods.thrixlvault.utils.version.Version;
-import com.wildermods.workspace.dependency.CapabilityHandler;
-import com.wildermods.workspace.dependency.CapabilityHandler.SourceStrategy;
+import com.wildermods.workspace.capabilities.CapabilityHandler;
+import com.wildermods.workspace.capabilities.GradleProject;
+import com.wildermods.workspace.capabilities.ModuleInfo;
+import com.wildermods.workspace.capabilities.CapabilityHandler.SourceStrategy;
 import com.wildermods.workspace.dependency.ProjectDependencyType;
 import com.wildermods.workspace.dependency.WWProjectDependency;
 import com.wildermods.workspace.tasks.ClearLocalRuntimeTask;
@@ -58,7 +59,6 @@ import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.Serializable;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
@@ -616,7 +616,7 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			});
 
 			// 2. Scan and generate Ivy repo
-			CapabilityHandler handler = new CapabilityHandler(project);
+			CapabilityHandler handler = new CapabilityHandler(new GradleProject(project));
 			Map<String, ModuleInfo> flatDirModuleInfo = scanFlatDirModules(project, handler);
 			project.getLogger().info("Found " + flatDirModuleInfo.size() + " flatDir modules");
 
@@ -944,44 +944,10 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 	}
 	
 	private Map<String, ModuleInfo> scanFlatDirModules(Project project, CapabilityHandler handler) throws IOException {
-		Map<String, ModuleInfo> result = new HashMap<>();
 		FlatDirectoryArtifactRepository repo = (FlatDirectoryArtifactRepository)
 				project.getRepositories().getByName(GAME_LIBS_REPO_NAME);
 
-		for (File dir : repo.getDirs()) {
-			Path path = dir.toPath();
-			if (!Files.isDirectory(path)) continue;
-			project.getLogger().info("Found DIRECTORY, searching inside " + dir);
-			Files.list(path)
-				.filter(p -> p.toString().endsWith(".jar"))
-				.forEach(jar -> {
-					project.getLogger().info("Found JAR " + jar);
-					String fileName = jar.getFileName().toString();
-					String moduleName = fileName.substring(0, fileName.length() - 4); // remove .jar
-					handler.findModuleForFile(jar).ifPresent(module -> {
-						project.getLogger().info("Creating modules for " + jar);
-						module.fileAliases.stream()
-						.filter(alias -> alias.matches(jar))
-						.findFirst()
-						.flatMap(alias -> alias.extractVersion(jar, project))  // now returns Optional<VersionResult>
-						.ifPresent(res -> {
-							Path relative = project.getRootDir().toPath().relativize(jar);
-							ModuleInfo m = new ModuleInfo(
-								module.getGroup(),
-								module.getName(),
-								res.version,
-								relative,
-								project.getRootDir().toPath(),
-								res.sourceStrategy		// pass the source strategy
-							);
-							result.put(moduleName, m);
-							project.getLogger().info("Created module for " + jar + " (" + m + ")");
-							project.getLogger().info("Expecting source strategy: " + res.sourceStrategy.type);
-						});
-					});
-				});
-		}
-		return result;
+		return handler.scanFlatDirModules(new GradleProject(project), repo.getDirs());
 	}
 	
 	private void generateIvyRepository(Project project, Map<String, ModuleInfo> moduleInfoMap) throws IOException {
@@ -1090,6 +1056,4 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 	private boolean isWorkspaceInitialized(Project project) {
 		return Files.exists(project.getLayout().getBuildDirectory().getAsFile().get().toPath().resolve("bin").resolve("lib"));
 	}
-	
-	public static record ModuleInfo(String group, String artifact, Version version, Path relativeJarPath, Path projectRoot, SourceStrategy sourceStrategy) implements Serializable {}
 }

@@ -47,6 +47,14 @@ tasks.withType(PublishToMavenRepository).configureEach {
     }
 }
 
+tasks.register('capabilitiesJar', Jar) {
+    archiveFileName = "workspace-capabilities-${project.version}.jar"
+    from(sourceSets.main.output) {
+        include 'capabilities.json'
+        include 'com/wildermods/workspace/capabilities/**'
+    }
+}
+
 publishing {
     publications {
         mavenJava(MavenPublication) {
@@ -57,6 +65,13 @@ publishing {
 
             // Attach sources JAR to the publication
             artifact sourceJar
+        }
+        
+        capabilities(MavenPublication) {
+        	groupId = project.group
+        	artifactId = "workspace-capabilities"
+        	version = project.version
+        	artifact tasks.named('capabilitiesJar')
         }
     }
 

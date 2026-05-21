@@ -795,7 +795,7 @@
 				{
 					"type": "method",
 					"value": "getTweenVersion",
-					"class": "com.wildermods.workspace.dependency.CapabilityHandler",
+					"class": "com.wildermods.workspace.capabilities.CapabilityHandler",
 					"source": [
 						{
 							"type": "decompile",

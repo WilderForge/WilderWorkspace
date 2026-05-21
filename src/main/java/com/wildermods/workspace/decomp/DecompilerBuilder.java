@@ -7,8 +7,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import com.wildermods.workspace.WilderWorkspacePluginImpl.ModuleInfo;
-import com.wildermods.workspace.dependency.CapabilityHandler.SourceStrategy;
+import com.wildermods.workspace.capabilities.CapabilityHandler.SourceStrategy;
+import com.wildermods.workspace.capabilities.ModuleInfo;
 
 import net.fabricmc.loom.api.decompilers.DecompilationMetadata;
 import net.fabricmc.loom.util.IOStringConsumer;

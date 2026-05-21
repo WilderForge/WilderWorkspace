@@ -6,9 +6,9 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
-import org.gradle.api.Project;
 
-import com.wildermods.workspace.WilderWorkspacePluginImpl.ModuleInfo;
+import com.wildermods.workspace.capabilities.GameProject;
+import com.wildermods.workspace.capabilities.ModuleInfo;
 
 import net.fabricmc.loom.decompilers.ClassLineNumbers;
 import net.fabricmc.loom.decompilers.LineNumberRemapper;
@@ -16,10 +16,10 @@ import net.fabricmc.loom.decompilers.LineNumberRemapper;
 public class WildermythDecompilerSetup {
 
 	private final DecompilerBuilder builder;
-	private final Project project;
+	private final GameProject project;
 	private final Map<String, ModuleInfo> modules;
 
-	public WildermythDecompilerSetup(DecompilerBuilder builder, Project project, Map<String, ModuleInfo> modules) {
+	public WildermythDecompilerSetup(DecompilerBuilder builder, GameProject project, Map<String, ModuleInfo> modules) {
 		this.builder = builder;
 		this.project = project;
 		this.modules = modules;
@@ -27,7 +27,7 @@ public class WildermythDecompilerSetup {
 
 	public void decompile(Path decompDir) throws IOException {
 		// Pass modules and project root to the builder
-		builder.setModules(modules, project.getRootDir().toPath());
+		builder.setModules(modules, project.getRootDir());
 		builder.setDecompDest(decompDir);
 
 		// Optionally add any extra libraries (if needed) – but they are already handled via modules
@@ -41,7 +41,7 @@ public class WildermythDecompilerSetup {
 			Map<String, Path> sourceJars = new java.util.HashMap<>();
 			for (ModuleInfo info : modules.values()) {
 				if ("decompile".equals(info.sourceStrategy().type)) {
-					Path jar = project.getRootDir().toPath().resolve(info.relativeJarPath()).normalize();
+					Path jar = project.getRootDir().resolve(info.relativeJarPath()).normalize();
 					sourceJars.put(jar.getFileName().toString(), jar);
 				}
 			}
@@ -51,23 +51,23 @@ public class WildermythDecompilerSetup {
 					String jarName = StringUtils.removeEnd(linemap.getFileName().toString(), ".linemap");
 					Path sourceJar = sourceJars.get(jarName);
 					if (sourceJar != null && Files.exists(sourceJar)) {
-						project.getLogger().info("Remapping " + sourceJar);
+						project.info("Remapping " + sourceJar);
 						try {
 							remap(linemap, sourceJar, sourceJar); // overwrite original (as before)
 						} catch (Throwable e) {
 							throw new RuntimeException("Failed to remap " + jarName, e);
 						}
 					} else {
-						project.getLogger().warn("No source jar found for linemap: " + jarName);
+						project.warn("No source jar found for linemap: " + jarName);
 					}
 				});
 		} else {
-			project.getLogger().info("No linemap directory found at " + linemapDir);
+			project.info("No linemap directory found at " + linemapDir);
 		}
 	}
 
 	private void remap(Path linemap, Path jarToRemap, Path remappedJarDest) throws Throwable {
-		project.getLogger().info("Remapping " + jarToRemap + " to " + remappedJarDest);
+		project.info("Remapping " + jarToRemap + " to " + remappedJarDest);
 		ClassLineNumbers lineNumbers = ClassLineNumbers.readMappings(Files.newBufferedReader(linemap));
 		LineNumberRemapper remapper = new LineNumberRemapper(lineNumbers);
 		if (Files.notExists(remappedJarDest)) {

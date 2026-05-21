@@ -1,5 +1,6 @@
-package com.wildermods.workspace.dependency;
+package com.wildermods.workspace.capabilities;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -8,22 +9,23 @@ import java.lang.reflect.Method;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import org.gradle.api.Project;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
 import com.wildermods.thrixlvault.exception.VersionParsingException;
 import com.wildermods.thrixlvault.utils.version.Version;
 import com.wildermods.thrixlvault.utils.version.VersionPredicate;
@@ -37,11 +39,11 @@ public class CapabilityHandler {
 
 	public final Map<String, CanonicalModule> modules = new LinkedHashMap<>();
 
-	public CapabilityHandler(Project project) throws IOException {
+	public CapabilityHandler(GameProject project) throws IOException {
 		this(project, readJsonFromResource("/capabilities.json"));
 	}
 
-	public CapabilityHandler(Project project, JsonObject json) {
+	public CapabilityHandler(GameProject project, JsonObject json) {
 		for (var entry : json.entrySet()) {
 			String canonicalKey = entry.getKey();
 			CanonicalModule module = new CanonicalModule(canonicalKey);
@@ -63,6 +65,45 @@ public class CapabilityHandler {
 			}
 			modules.put(canonicalKey, module);
 		}
+	}
+	
+	public Map<String, ModuleInfo> scanFlatDirModules(GameProject project, Set<File> dirs) throws IOException {
+		Map<String, ModuleInfo> result = new HashMap<>();
+
+		for (File dir : dirs) {
+			Path path = dir.toPath();
+			if (!Files.isDirectory(path)) continue;
+			project.info("Found DIRECTORY, searching inside " + dir);
+			Files.list(path)
+				.filter(p -> p.toString().endsWith(".jar"))
+				.forEach(jar -> {
+					project.info("Found JAR " + jar);
+					String fileName = jar.getFileName().toString();
+					String moduleName = fileName.substring(0, fileName.length() - 4); // remove .jar
+					this.findModuleForFile(jar).ifPresent(module -> {
+						project.info("Creating modules for " + jar);
+						module.fileAliases.stream()
+						.filter(alias -> alias.matches(jar))
+						.findFirst()
+						.flatMap(alias -> alias.extractVersion(jar, project))
+						.ifPresent(res -> {
+							Path relative = project.getRootDir().relativize(jar);
+							ModuleInfo m = new ModuleInfo(
+								module.getGroup(),
+								module.getName(),
+								res.version,
+								relative,
+								project.getRootDir(),
+								res.sourceStrategy
+							);
+							result.put(moduleName, m);
+							project.info("Created module for " + jar + " (" + m + ")");
+							project.info("Expecting source strategy: " + res.sourceStrategy.type);
+						});
+					});
+				});
+		}
+		return result;
 	}
 
 	private static JsonObject readJsonFromResource(String path) throws IOException {
@@ -143,7 +184,7 @@ public class CapabilityHandler {
 			this.sourceStrategies = sourceStrategies;
 		}
 
-		public Optional<VersionResult> extract(Path file, Project project) {
+		public Optional<VersionResult> extract(Path file, GameProject project) {
 			Optional<String> versionStr = extractor.extract(file);
 			if (versionStr.isEmpty() || versionStr.get().isBlank()) {
 				return Optional.empty();
@@ -152,7 +193,7 @@ public class CapabilityHandler {
 			try {
 				version = Version.parse(versionStr.get());
 			} catch (VersionParsingException e) {
-				project.getLogger().warn("Failed to parse version '{}' for {}", versionStr.get(), file);
+				project.warn("Failed to parse version '"+ versionStr.get() +"' for " + file);
 				throw new AssertionError(e); //fail fast so we don't deploy broken stuff
 			}
 			// Select the first source strategy that does NOT exclude this version
@@ -177,7 +218,7 @@ public class CapabilityHandler {
 				}
 			}
 			if (selected == null) {
-				project.getLogger().warn("No source strategy applicable for version {} of {}", version, file);
+				project.warn("No source strategy applicable for version "+ version + " of " + file);
 				selected = new SourceStrategy("skip", List.of(), null);
 			}
 			return Optional.of(new VersionResult(version, selected));
@@ -200,8 +241,8 @@ public class CapabilityHandler {
 			this.versionRules = rules;
 		}
 
-		public static FileAlias fromJson(CanonicalModule module, JsonObject json, Project project) {
-			Path baseDir = project.getRootDir().toPath();
+		public static FileAlias fromJson(CanonicalModule module, JsonObject json, GameProject project) {
+			Path baseDir = project.getRootDir();
 
 			List<Path> dirs = json.getAsJsonArray("location").asList().stream()
 					.<Path>map(e -> baseDir.resolve(e.getAsString()).normalize())
@@ -231,7 +272,7 @@ public class CapabilityHandler {
 			return inDirectory;
 		}
 
-		public Optional<VersionResult> extractVersion(Path file, Project project) {
+		public Optional<VersionResult> extractVersion(Path file, GameProject project) {
 			for (VersionRule rule : versionRules) {
 				Optional<VersionResult> result = rule.extract(file, project);
 				if (result.isPresent()) {
@@ -251,14 +292,14 @@ public class CapabilityHandler {
 	}
 
 	// ---------- Version extraction ----------
-	private static VersionRule createVersionRule(CanonicalModule module, JsonObject ruleObj, Project project) {
+	private static VersionRule createVersionRule(CanonicalModule module, JsonObject ruleObj, GameProject project) {
 		String type = ruleObj.get("type").getAsString();
 		String value = ruleObj.get("value").getAsString();
 
-		project.getLogger().info(module + ": Creating version rule: " + type + " - " + value);
+		project.info(module + ": Creating version rule: " + type + " - " + value);
 
 		// Parse source array
-		List<SourceStrategy> sourceStrategies = parseSourceArray(ruleObj, project);
+		List<SourceStrategy> sourceStrategies = parseSourceArray(ruleObj);
 
 		// Build the appropriate extractor
 		VersionExtractor extractor;
@@ -266,35 +307,37 @@ public class CapabilityHandler {
 			case "derived":
 				Pattern pattern = Pattern.compile(value);
 				extractor = file -> {
-					project.getLogger().info("Executing " + module + ": derived - " + value);
+					project.info("Executing " + module + ": derived - " + value);
 					return pattern.matcher(file.getFileName().toString()).results()
 							.findFirst().map(m -> m.group(1));
 				};
 				break;
 			case "literal":
 				extractor = file -> {
-					project.getLogger().info("Executing " + module + ": literal - " + value);
+					project.info("Executing " + module + ": literal - " + value);
 					return Optional.of(value);
 				};
 				break;
 			case "projectVar":
-				String varName = value;
-				extractor = file -> {
-					project.getLogger().info("Executing " + module + ": projectVar - " + varName);
-					return Optional.ofNullable(project.findProperty(varName))
-							.map(Object::toString);
-				};
+				if(project instanceof GradleProject) {
+					extractor = GradleProjectVarHandler.createGradleProjectVarExtractor((GradleProject)project, module, value);
+				}
+				else {
+					extractor = notAGradleProject -> {
+						return Optional.of(getGameVersion(project, value));
+					};
+				}
 				break;
 			case "method":
-				project.getLogger().info("Creating " + module + ": method - " + value);
+				project.info("Creating " + module + ": method - " + value);
 				extractor = file -> {
-					project.getLogger().info("Executing " + module + ": method - " + value);
+					project.info("Executing " + module + ": method - " + value);
 					try {
 						String clazzName = ruleObj.get("class").getAsString();
 						Class<?> clazz = Class.forName(clazzName);
-						Method m = clazz.getMethod(value);
+						Method m = clazz.getDeclaredMethod(value, Path.class);
 						m.setAccessible(true);
-						return Optional.of((String) m.invoke(null));
+						return Optional.of((String) m.invoke(null, file));
 					} catch (Exception | LinkageError e) {
 						e.printStackTrace();
 						return Optional.empty();
@@ -302,9 +345,9 @@ public class CapabilityHandler {
 				};
 				break;
 			case "assert":
-				project.getLogger().info("Creating " + module + ": assert - " + value);
+				project.info("Creating " + module + ": assert - " + value);
 				extractor = file -> {
-					project.getLogger().info("Executing " + module + ": assert - " + value);
+					project.info("Executing " + module + ": assert - " + value);
 					throw new AssertionError(value);
 				};
 				break;
@@ -314,7 +357,7 @@ public class CapabilityHandler {
 		return new VersionRule(extractor, sourceStrategies);
 	}
 
-	private static List<SourceStrategy> parseSourceArray(JsonObject ruleObj, Project project) {
+	private static List<SourceStrategy> parseSourceArray(JsonObject ruleObj) {
 		if (!ruleObj.has("source")) {
 			// default: decompile with no exclusions
 			return List.of(new SourceStrategy("decompile", List.of(), null));
@@ -344,7 +387,7 @@ public class CapabilityHandler {
 		return strategies;
 	}
 
-	private String getTweenVersion(Path jarPath) throws Exception {
+	private static String getTweenVersion(Path jarPath) throws Exception {
 		AtomicReference<String> version = new AtomicReference<>();
 		try (JarFile jar = new JarFile(jarPath.toFile())) {
 			JarEntry entry = jar.getJarEntry("aurelienribon/tweenengine/Tween.class");
@@ -373,5 +416,20 @@ public class CapabilityHandler {
 			}
 		}
 		return version.get();
+	}
+	
+	private static String getGameVersion(GameProject project, String file) {
+		Path versionFile = project.getRootDir().resolve("version.txt");
+		try {
+			if(Files.exists(versionFile)) {
+				Files.readString(versionFile).split(" ")[0].replace('+', '.');
+			}
+		}
+		catch(IOException e) {
+			LinkageError err = new LinkageError("Could not detect wildermyth version");
+			err.initCause(e);
+			throw err;
+		}
+		throw new LinkageError("Could not detect wildermyth version. Missing versions.txt?");
 	}
 }

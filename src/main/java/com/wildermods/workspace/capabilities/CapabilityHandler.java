@@ -324,7 +324,7 @@ public class CapabilityHandler {
 				}
 				else {
 					extractor = notAGradleProject -> {
-						return Optional.of(getGameVersion(project, value));
+						return Optional.empty();
 					};
 				}
 				break;
@@ -348,7 +348,11 @@ public class CapabilityHandler {
 				project.info("Creating " + module + ": assert - " + value);
 				extractor = file -> {
 					project.info("Executing " + module + ": assert - " + value);
-					throw new AssertionError(value);
+					AssertionError cause = null;
+					if("com.wildermods.workspace.capabilities.GradleProject".equals(project.getClass().getCanonicalName())) {
+						cause = new AssertionError("Project has not declared game version to compile against!!");
+					}
+					throw new AssertionError(value, cause);
 				};
 				break;
 			default:
@@ -387,6 +391,7 @@ public class CapabilityHandler {
 		return strategies;
 	}
 
+	@SuppressWarnings("unused")
 	private static String getTweenVersion(Path jarPath) throws Exception {
 		AtomicReference<String> version = new AtomicReference<>();
 		try (JarFile jar = new JarFile(jarPath.toFile())) {
@@ -418,8 +423,13 @@ public class CapabilityHandler {
 		return version.get();
 	}
 	
-	private static String getGameVersion(GameProject project, String file) {
-		Path versionFile = project.getRootDir().resolve("version.txt");
+	@SuppressWarnings("unused")
+	private static String getGameVersion(Path dir) {
+		if(dir.getParent().getFileName().toString().equals("lib")) {
+			dir = dir.getParent();
+		}
+		Path versionFile = dir.resolve("version.txt");
+		
 		try {
 			if(Files.exists(versionFile)) {
 				Files.readString(versionFile).split(" ")[0].replace('+', '.');
@@ -430,6 +440,6 @@ public class CapabilityHandler {
 			err.initCause(e);
 			throw err;
 		}
-		throw new LinkageError("Could not detect wildermyth version. Missing versions.txt?");
+		throw new LinkageError("Could not detect wildermyth version. Missing version.txt?");
 	}
 }

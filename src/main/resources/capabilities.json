@@ -142,8 +142,13 @@
 					"value": "gameVersion"
 				},
 				{
+					"type": "method",
+					"value": "getGameVersion",
+					"class": "com.wildermods.workspace.capabilities.CapabilityHandler"
+				},
+				{
 					"type": "assert",
-					"value": "Project has not declared game version to compile against!!"
+					"value": "Unable to determine game version!!!!"
 				}
 			]
 		}	
@@ -212,8 +217,13 @@
 					"value": "gameVersion"
 				},
 				{
+					"type": "method",
+					"value": "getGameVersion",
+					"class": "com.wildermods.workspace.capabilities.CapabilityHandler"
+				},
+				{
 					"type": "assert",
-					"value": "Project has not declared game version to compile against!!"
+					"value": "Unable to determine game version!!!!"
 				}
 			]
 		}
@@ -442,8 +452,13 @@
 					"value": "gameVersion"
 				},
 				{
+					"type": "method",
+					"value": "getGameVersion",
+					"class": "com.wildermods.workspace.capabilities.CapabilityHandler"
+				},
+				{
 					"type": "assert",
-					"value": "Project has not declared game version to compile against!!"
+					"value": "Unable to determine game version!!!!"
 				}
 			]
 		}
@@ -750,8 +765,13 @@
 					"value": "gameVersion"
 				},
 				{
+					"type": "method",
+					"value": "getGameVersion",
+					"class": "com.wildermods.workspace.capabilities.CapabilityHandler"
+				},
+				{
 					"type": "assert",
-					"value": "Project has not declared game version to compile against!!"
+					"value": "Unable to determine game version!!!!"
 				}
 			]
 		}
@@ -847,8 +867,13 @@
 					"value": "gameVersion"
 				},
 				{
+					"type": "method",
+					"value": "getGameVersion",
+					"class": "com.wildermods.workspace.capabilities.CapabilityHandler"
+				},
+				{
 					"type": "assert",
-					"value": "Project has not declared game version to compile against!!"
+					"value": "Unable to determine game version!!!!"
 				}
 			]
 		}
@@ -868,8 +893,13 @@
 					"value": "gameVersion"
 				},
 				{
+					"type": "method",
+					"value": "getGameVersion",
+					"class": "com.wildermods.workspace.capabilities.CapabilityHandler"
+				},
+				{
 					"type": "assert",
-					"value": "Project has not declared game version to compile against!!"
+					"value": "Unable to determine game version!!!!"
 				}
 			]
 		}

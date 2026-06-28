@@ -40,7 +40,7 @@ public abstract class JarJarTask extends DefaultTask {
 			getLogger().info("Will attempt to nest " + file + " into " + getMainJar().get().getAsFile());
 		}
 		
-		JarNester.nestJars(nestedJars, main, getLogger());
+		JarNester.nestJars(nestedJars, main);
 		
 		getLogger().lifecycle("Nested " + nestedJars.size());
 	}

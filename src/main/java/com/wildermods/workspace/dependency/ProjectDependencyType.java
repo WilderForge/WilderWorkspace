@@ -27,6 +27,9 @@ public enum ProjectDependencyType {
 	 */
 	testCompileClasspath,
 	
+	@Deprecated
+	testRuntimeClasspath,
+	
 	/**
 	 * normal gradle implementation dependencies
 	 */
@@ -60,6 +63,9 @@ public enum ProjectDependencyType {
 	 * For internal use only, used to copy all of the project's dependencies to the workspace.
 	 */
 	resolvableImplementation,
+	
+	@Deprecated
+	runtimeClasspath,
 	
 	/**
 	 * A configuration that includes {@link fabricDep} and {@link fabricImpl} dependencies.

@@ -7,7 +7,6 @@ import org.gradle.api.artifacts.ComponentMetadataDetails;
 import org.gradle.api.artifacts.ComponentMetadataRule;
 import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.artifacts.ModuleDependency;
 import org.gradle.api.artifacts.dsl.ComponentMetadataHandler;
 import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
@@ -112,9 +111,6 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 	}
 	
 	private Configuration implementation;
-	private Configuration compileOnly;
-	private Configuration compileClasspath;
-	private Configuration testCompileClasspath;
 	private Configuration fabricDep;
 	private Configuration fabricImpl;
 	private Configuration provider;
@@ -266,6 +262,7 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 	private void setupConfigurations(WWProjectContext context) {
 		Project project = context.getProject();
 		implementation = project.getConfigurations().getByName(ProjectDependencyType.implementation.name());
+		
 		nest = project.getConfigurations().create(ProjectDependencyType.nest.name(), configuration -> {
 			configuration.setCanBeResolved(true);
 			configuration.setCanBeConsumed(false);
@@ -275,17 +272,6 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			configuration.setCanBeResolved(true);
 			configuration.setCanBeConsumed(false);
 			configuration.setTransitive(true);
-			
-			// Lazily mirror nest's dependencies, but force them to transitive = false
-			configuration.withDependencies(deps -> {
-				for (Dependency dep : nest.getDependencies()) {
-					Dependency copy = dep.copy();
-					if(copy instanceof ModuleDependency) {
-						((ModuleDependency) copy).setTransitive(false);
-					}
-					deps.add(copy);
-				}
-			});
 		});
 		
 		retrieveJson = project.getConfigurations().create(ProjectDependencyType.retrieveJson.name(), configuration -> {
@@ -305,33 +291,25 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		fabricImpl = project.getConfigurations().create(ProjectDependencyType.fabricImpl.name());
 		fabricImpl.setCanBeResolved(true);
 		
-		compileOnly = project.getConfigurations().getByName(ProjectDependencyType.compileOnly.name());
-		
 		provider = project.getConfigurations().create(ProjectDependencyType.provider.name());
 		
-		compileClasspath = project.getConfigurations().getByName(ProjectDependencyType.compileClasspath.name());
-		compileClasspath.extendsFrom(nestTransitive);
-		compileClasspath.extendsFrom(fabricDep);
-		compileClasspath.extendsFrom(fabricImpl);
-		compileClasspath.extendsFrom(provider);
-		compileClasspath.extendsFrom(retrieveJson);
-		compileClasspath.extendsFrom(jsonDependencies);
-		
-		testCompileClasspath = project.getConfigurations().getByName(ProjectDependencyType.testCompileClasspath.name());
-		testCompileClasspath.extendsFrom(compileClasspath);
+		implementation.extendsFrom(fabricDep);
+		implementation.extendsFrom(fabricImpl);
+		implementation.extendsFrom(provider);
+		implementation.extendsFrom(retrieveJson);
+		implementation.extendsFrom(jsonDependencies);
 		
 		resolvableImplementation = project.getConfigurations().create(ProjectDependencyType.resolvableImplementation.name(), configuration -> {
 			configuration.extendsFrom(implementation);
 			configuration.setCanBeResolved(true);
-			configuration.setCanBeConsumed(true);
+			configuration.setCanBeConsumed(false);
 		});
-		resolvableImplementation.extendsFrom(jsonDependencies);
 		
 		excludedFabricDeps = project.getConfigurations().create(ProjectDependencyType.excludedFabricDeps.name(), configuration -> {
 			configuration.extendsFrom(project.getConfigurations().getByName(ProjectDependencyType.fabricDep.name()));
 			configuration.extendsFrom(project.getConfigurations().getByName(ProjectDependencyType.fabricImpl.name()));
 			configuration.setCanBeResolved(true);
-			configuration.setCanBeConsumed(true);
+			configuration.setCanBeConsumed(false);
 		});
 		
 		DependencyHandler dependencies = project.getDependencies();
@@ -491,6 +469,7 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		});
 		
 		TaskProvider<NestableJarGenerationTask> genNestJars = project.getTasks().register("generateNestableJars", NestableJarGenerationTask.class, task -> {
+			task.from(nest);
 			task.from(nestTransitive);
 			task.getOutputDirectory().set(project.getLayout().getBuildDirectory().dir("nested-jars"));
 			task.getOutputs().upToDateWhen(t -> false);
@@ -787,6 +766,7 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 							pPaths.addAll(jsonProviderPaths);
 						}
 						List<String> knotClasspath = new ArrayList<>();
+						List<String> providerClasspath = new ArrayList<>();
 						
 						Iterator<ClasspathEntry> it = (Iterator<ClasspathEntry>)(Object)c.getEntries().iterator();
 						Path path = null;
@@ -852,6 +832,7 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 									
 									if(pPaths.contains(lib.getPath())) {
 										project.getLogger().info("Provider dependency found: " + path);
+										providerClasspath.add(pathStr);
 										continue;
 									}
 									
@@ -872,6 +853,10 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 						project.getExtensions().getExtraProperties()
 							.set("knotClasspath", String.join(File.pathSeparator, knotClasspath));
 						project.getLogger().info("Setting knot classpath to: " + knotClasspath);
+						
+						project.getExtensions().getExtraProperties()
+							.set("providerClasspath", String.join(File.pathSeparator, providerClasspath));
+						project.getLogger().info("Setting provider classpath to: " + providerClasspath);
 					});
 				});
 
@@ -1051,9 +1036,5 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 				caps.addCapability(canonicalGroup, canonicalName, version)
 			));
 		}
-	}
-	
-	private boolean isWorkspaceInitialized(Project project) {
-		return Files.exists(project.getLayout().getBuildDirectory().getAsFile().get().toPath().resolve("bin").resolve("lib"));
 	}
 }

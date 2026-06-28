@@ -44,7 +44,7 @@ public enum WWProjectDependency {
 		fabricLoader("com.wildermods", "fabric-loader", "@fabricLoaderVersion@", fabricImpl, retrieveJson, provider, retrieveJsonProvider, api),
 		
 		mixin("net.fabricmc", "sponge-mixin", "@mixinVersion@", fabricImpl, provider),
-		guava("com.google.guava", "guava", "@guavaVersion@", fabricImpl, provider),
+		guava("com.google.guava", "guava", "@guavaVersion@", fabricImpl, provider, api),
 		gson("com.google.code.gson", "gson", "@gsonVersion@", fabricImpl, provider),
 		
 		gameProvider("com.wildermods", "provider", "@providerVersion@", fabricImpl, provider),

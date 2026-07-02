@@ -44,12 +44,9 @@ dependencies {
 	api libs.commons.text
 	api libs.commons.io
 	api libs.fabric.loom
-	api(variantOf(libs.vineflower) { classifier("slim") })
+	api libs.vineflower
 	api libs.gson
 	api libs.thrixlvault
-	
-	
-	implementation libs.vineflower
 	
 	dependabot libs.asm
 	dependabot libs.asm.analysis

@@ -17,6 +17,13 @@ libgdx_version = "1.11.0"
 
 
 [libraries]
+asm = { module = "org.ow2.asm:asm", version.ref = "asm_version" }
+asm_analysis = { module = "org.ow2.asm:asm-analysis", version.ref = "asm_version" }
+asm_commons = { module = "org.ow2.asm:asm-commons", version.ref = "asm_version" }
+asm_tree = { module = "org.ow2.asm:asm-tree", version.ref = "asm_version" }
+asm_util = { module = "org.ow2.asm:asm-util", version.ref = "asm_version" }
+mixin = { module = "net.fabricmc:sponge-mixin", version.ref = "mixin_version" }
+
 commons_lang = { module = "org.apache.commons:commons-lang3", version.ref = "commons_lang_version"}
 commons_text = { module = "org.apache.commons:commons-text", version.ref = "commons_text_version"}
 commons_io = { module = "commons-io:commons-io", version.ref = "commons_io_version"}

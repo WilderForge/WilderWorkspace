@@ -33,14 +33,31 @@ java {
 	}
 }
 
+configurations {
+	dependabot
+}
+
 //dependencies are defined in [project root]/gradle/deps.versions.toml
 dependencies {
-    gradleApi()
-    api libs.commons.lang
-    api libs.commons.text
-    api libs.commons.io
-    api libs.fabric.loom
-    api(variantOf(libs.vineflower) { classifier("slim") })
-    api libs.gson
-    api libs.thrixlvault
+	gradleApi()
+	api libs.commons.lang
+	api libs.commons.text
+	api libs.commons.io
+	api libs.fabric.loom
+	api(variantOf(libs.vineflower) { classifier("slim") })
+	api libs.gson
+	api libs.thrixlvault
+	
+	
+	implementation libs.vineflower
+	
+	dependabot libs.asm
+	dependabot libs.asm.analysis
+	dependabot libs.asm.commons
+	dependabot libs.asm.tree
+	dependabot libs.asm.util
+	dependabot libs.fabric.loader
+	dependabot libs.mixin
+	dependabot libs.log4j.core
+	dependabot libs.log4j.slf4j2.impl
 }

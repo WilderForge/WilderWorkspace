@@ -48,9 +48,6 @@ dependencies {
 	api libs.gson
 	api libs.thrixlvault
 	
-	
-	implementation libs.vineflower
-	
 	dependabot libs.asm
 	dependabot libs.asm.analysis
 	dependabot libs.asm.commons

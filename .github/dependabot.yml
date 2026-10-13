@@ -1,7 +1,13 @@
 version: 2
+registries:
+  wildermods:
+    type: maven-repository
+    url: https://maven.wildermods.com
 updates:
   - package-ecosystem: "gradle" 
     directory: "/" 
+    registries:
+      - wildermods
     schedule:
       interval: "daily"
     assignees:

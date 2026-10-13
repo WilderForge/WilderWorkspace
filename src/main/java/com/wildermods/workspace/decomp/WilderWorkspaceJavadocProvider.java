@@ -6,19 +6,20 @@ import org.jetbrains.java.decompiler.struct.StructClass;
 import org.jetbrains.java.decompiler.struct.StructField;
 import org.jetbrains.java.decompiler.struct.StructMethod;
 
+import net.fabricmc.loom.api.decompilers.JavadocStyle;
 import net.fabricmc.loom.decompilers.vineflower.TinyJavadocProvider;
 
 public class WilderWorkspaceJavadocProvider extends TinyJavadocProvider {
 	
 	private final TinyJavadocProvider parent;
 
-	public WilderWorkspaceJavadocProvider(File tinyFile, String runtimeNamespace) {
-		super(tinyFile, runtimeNamespace);
+	public WilderWorkspaceJavadocProvider(File tinyFile, String runtimeNamespace, JavadocStyle style) {
+		super(tinyFile, runtimeNamespace, style);
 		if(tinyFile == null) {
 			parent = null;
 		}
 		else {
-			parent = new TinyJavadocProvider(tinyFile, runtimeNamespace);
+			parent = new TinyJavadocProvider(tinyFile, runtimeNamespace, style);
 		}
 	}
 

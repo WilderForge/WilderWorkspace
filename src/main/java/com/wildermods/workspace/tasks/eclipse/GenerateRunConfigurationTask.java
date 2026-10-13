@@ -21,6 +21,8 @@ import org.gradle.api.GradleException;
 import org.gradle.api.tasks.Input;
 import org.gradle.api.tasks.InputFile;
 import org.gradle.api.tasks.OutputFile;
+import org.gradle.api.tasks.PathSensitive;
+import org.gradle.api.tasks.PathSensitivity;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.plugins.ide.eclipse.model.EclipseModel;
 import org.gradle.work.DisableCachingByDefault;
@@ -42,6 +44,7 @@ public class GenerateRunConfigurationTask extends DefaultTask {
     }
 
     @InputFile
+    @PathSensitive(PathSensitivity.NONE)
     public Path getArgsFile() {
         return getProject().getBuildDir().toPath().resolve("runArgs.properties");
     }

@@ -1,5 +1,8 @@
 version: 2
 registries:
+  fabric:
+    type: maven-repository
+    url: https://maven.fabricmc.net
   wildermods:
     type: maven-repository
     url: https://maven.wildermods.com

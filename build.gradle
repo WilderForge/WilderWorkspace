@@ -13,9 +13,6 @@ repositories {
     maven {
         url "https://maven.wildermods.com/"
     }
-    maven {
-    	url "https://central.sonatype.com/repository/maven-snapshots/"
-    }
 }
 
 println(repositories)

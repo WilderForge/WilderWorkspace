@@ -12,12 +12,10 @@ import org.gradle.api.artifacts.dsl.DependencyHandler;
 import org.gradle.api.artifacts.dsl.RepositoryHandler;
 import org.gradle.api.artifacts.repositories.FlatDirectoryArtifactRepository;
 import org.gradle.api.artifacts.repositories.MavenArtifactRepository;
-import org.gradle.api.file.FileTree;
 import org.gradle.api.initialization.Settings;
 import org.gradle.api.initialization.dsl.ScriptHandler;
 import org.gradle.api.logging.LogLevel;
 import org.gradle.api.plugins.JavaPlugin;
-import org.gradle.api.provider.Provider;
 import org.gradle.api.tasks.Copy;
 import org.gradle.api.tasks.TaskProvider;
 import org.gradle.internal.classloader.VisitableURLClassLoader;
@@ -43,6 +41,7 @@ import com.wildermods.workspace.capabilities.ModuleInfo;
 import com.wildermods.workspace.capabilities.CapabilityHandler.SourceStrategy;
 import com.wildermods.workspace.dependency.ProjectDependencyType;
 import com.wildermods.workspace.dependency.WWProjectDependency;
+import com.wildermods.workspace.tasks.CalculateRuntimeTask;
 import com.wildermods.workspace.tasks.ClearLocalRuntimeTask;
 import com.wildermods.workspace.tasks.CopyLocalDependenciesToWorkspaceTask;
 import com.wildermods.workspace.tasks.DecompileJarsTask;
@@ -446,13 +445,18 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			task.into(Path.of(extension.getGameDestDir()).resolve("modDeps"));
 		});
 		
+		project.getTasks().register("calculateRuntime", CalculateRuntimeTask.class, task -> {
+			
+		}); 
+		
 		project.getTasks().register("regenEclipseRuns", GenerateRunConfigurationTask.class, task -> {
 			task.overwrite = true;
 			task.dependsOn("eclipse");
+			task.dependsOn("calculateRuntime");
 		});
 		
 		project.getTasks().register("genEclipseRuns", GenerateRunConfigurationTask.class, task -> {
-			
+			task.dependsOn("calculateRuntime");
 		});
 		
 		project.getTasks().register("generateLauncherMetadata", GenerateLauncherMetadataTask.class, task -> {
@@ -528,7 +532,6 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		project.getTasks().named("assemble").configure(assemble -> assemble.dependsOn(nestJarsTask));
 		project.getTasks().named("publish").configure(publish -> {
 			publish.dependsOn(project.getTasks().named("assemble"));
-			project.getTasks().named("jar").get().dependsOn(genNestJars);
 		});
 		
 		if(project.getPlugins().hasPlugin("eclipse")) {
@@ -546,28 +549,6 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 					outputJar.delete();
 				}
 			});
-			
-			Provider<FileTree> nestedJars = project.provider(() -> {
-				if (project.getGradle().getTaskGraph().hasTask(":publish")) {
-					return project.fileTree(project.getLayout().getBuildDirectory().dir("nested-jars").get(), spec -> {
-						spec.include("*.jar");
-						spec.include("fabric.mod.json");
-					});
-				} else {
-					return project.files().getAsFileTree(); // empty FileTree
-				}
-			});
-
-			jar.from(nestedJars, copySpec -> {
-				copySpec.into("META-INF/jars");
-				copySpec.rename(name -> {
-					if(name.equals("nested.fabric.mod.json")) {
-						return "fabric.mod.json";
-					}
-					return name;
-				});
-			});
-
 		});
 	}
 	
@@ -836,10 +817,10 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 										continue;
 									}
 									
-									if(compilePaths.contains(lib.getPath())) {
+									/*if(compilePaths.contains(lib.getPath())) {
 										project.getLogger().info("Ignoring compile only dlependency: " + path);
 										continue;
-									}
+									}*/
 								}
 								knotClasspath.add(pathStr);
 							}

@@ -26,6 +26,7 @@ public class WilderWorkspaceExtension {
 	private String decompDir;
 	
 	private String steamCMDUser;
+	private String gameVariant = VaultedDependencySpec.DEFAULT_VARIANT;
 	private final List<VaultedDependencySpec> vaultedDependencies = new ArrayList<>();
 	
 	public WilderWorkspaceExtension(Project project) {
@@ -43,6 +44,10 @@ public class WilderWorkspaceExtension {
 		return platform;
 	}
 	
+	public void setPlatform(String platform) {
+		setPlatformm(platform);
+	}
+
 	public void setPlatformm(String platform) {
 		project.getLogger().info("Setting platform to '" + platform + "'");
 		this.platform = platform;
@@ -81,22 +86,44 @@ public class WilderWorkspaceExtension {
 		this.decompDir = dir;
 	}
 	
+	/** The default variant for game dependencies and local installations. */
+	public String getGameVariant() {
+		return gameVariant;
+	}
+
+	public void setGameVariant(String variant) {
+		this.gameVariant = VaultedDependencySpec.validateVariant(variant);
+	}
+
 	public void useDependency(VaultedDependencySpec dependency) {
 		vaultedDependencies.add(dependency);
 	}
 	
 	public void useDependency(Path vault, String version) throws IOException {
-		useDependency(new VaultedDependencySpec(new Vault(vault), version));
+		useDependency(vault, version, gameVariant);
 	}
 	
 	public void useDependency(Vault vault, String version) {
-		useDependency(new VaultedDependencySpec(vault, version));
+		useDependency(vault, version, gameVariant);
 	}
 	
 	public void useDependency(String version) {
-		useDependency(new VaultedDependencySpec(version));
+		useDependency(version, gameVariant);
 	}
 	
+	/** Selects a named context; coremod-base is generated if missing, others must already exist. */
+	public void useDependency(String version, String variant) {
+		useDependency(new VaultedDependencySpec(version, variant));
+	}
+
+	public void useDependency(Vault vault, String version, String variant) {
+		useDependency(new VaultedDependencySpec(vault, version, variant));
+	}
+
+	public void useDependency(Path vault, String version, String variant) throws IOException {
+		useDependency(new VaultedDependencySpec(vault, version, variant));
+	}
+
 	public List<VaultedDependencySpec> getVaultDependencies() {
 		return vaultedDependencies;
 	}

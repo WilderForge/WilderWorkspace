@@ -44,13 +44,15 @@ public class CalculateRuntimeTask extends DefaultTask {
 
 		props.setProperty("knotClasspath", knotClasspath);
 		props.setProperty("providerClasspath", providerClasspath);
+		props.setProperty("projectOutputClasspath", (String) getProject().getExtensions()
+			.getExtraProperties().get("projectOutputClasspath"));
 
 		List<String> vmArgs = new ArrayList<>();
 		vmArgs.add("-Dmixin.debug=true");
 		vmArgs.add("-Dfabric.development=true");
 
 		if (!knotClasspath.isEmpty()) {
-			vmArgs.add("-Dknot.class.path=" + knotClasspath);
+			vmArgs.add(quoteVmArgument("-Dknot.class.path=" + knotClasspath));
 		}
 
 		// Scan JARs and the project's fabric.mod.json for forceOpens/forceExports
@@ -127,6 +129,25 @@ public class CalculateRuntimeTask extends DefaultTask {
 			props.store(out, "Run arguments for game launch");
 		}
 		getLogger().info("Run arguments written to " + argsFile);
+	}
+
+	/** Quotes a complete VM argument for Eclipse's argument parser, preserving paths with spaces. */
+	public static String quoteVmArgument(String argument) {
+		if (File.separatorChar != '\\') {
+			return "\"" + argument.replace("\\", "\\\\").replace("\"", "\\\"") + "\"";
+		}
+		StringBuilder quoted = new StringBuilder("\"");
+		int backslashes = 0;
+		for (char ch : argument.toCharArray()) {
+			if (ch == '\\') {
+				backslashes++;
+				continue;
+			}
+			quoted.append("\\".repeat(ch == '"' ? backslashes * 2 + 1 : backslashes));
+			quoted.append(ch);
+			backslashes = 0;
+		}
+		return quoted.append("\\".repeat(backslashes * 2)).append('"').toString();
 	}
 
 	private void extractForceEntries(JsonObject json, Map<String, List<String>> opens, Map<String, List<String>> exports) {

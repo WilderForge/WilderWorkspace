@@ -21,7 +21,6 @@ import org.gradle.api.tasks.TaskProvider;
 import org.gradle.internal.classloader.VisitableURLClassLoader;
 import org.gradle.jvm.tasks.Jar;
 import org.gradle.plugins.ide.eclipse.EclipsePlugin;
-import org.gradle.plugins.ide.eclipse.model.AbstractClasspathEntry;
 import org.gradle.plugins.ide.eclipse.model.Classpath;
 import org.gradle.plugins.ide.eclipse.model.ClasspathEntry;
 import org.gradle.plugins.ide.eclipse.model.EclipseClasspath;
@@ -49,6 +48,7 @@ import com.wildermods.workspace.tasks.GenNestedMetadataJarsTask;
 import com.wildermods.workspace.tasks.GenerateLauncherMetadataTask;
 import com.wildermods.workspace.tasks.JarJarTask;
 import com.wildermods.workspace.tasks.eclipse.GenerateRunConfigurationTask;
+import com.wildermods.workspace.tasks.eclipse.EclipseRuntimeClasspath;
 import com.wildermods.workspace.util.ExceptionUtil;
 
 import net.fabricmc.loom.build.nesting.NestableJarGenerationTask;
@@ -67,7 +67,6 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -156,7 +155,10 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			WilderWorkspaceExtension extension = project.getExtensions().create("wilderWorkspace", WilderWorkspaceExtension.class);
 			extension.loadUserConfig();
 			
-			// Automatically use ext.gameVersion if present
+			// Automatically use ext.gameVersion and the optional ext.gameVariant if present
+			if (project.hasProperty("gameVariant")) {
+				extension.setGameVariant(project.property("gameVariant").toString());
+			}
 			if (project.hasProperty("gameVersion")) {
 				String gameVersion = project.property("gameVersion").toString();
 				extension.useDependency(gameVersion);
@@ -361,10 +363,13 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		});
 		
 		project.getTasks().register("copyLocalDependenciesToWorkspace", CopyLocalDependenciesToWorkspaceTask.class, task -> {
-			task.setPlatform(extension.getPlatform());
-			task.setPatchline(extension.getPatchline());
-			task.setDestDir(extension.getGameDestDir());
-			task.setSteamUser(extension.getSteamUser());
+			// The build script configures the extension after the plugin has registered this task.
+			task.doFirst(t -> {
+				task.setPlatform(extension.getPlatform());
+				task.setPatchline(extension.getPatchline());
+				task.setDestDir(extension.getGameDestDir());
+				task.setSteamUser(extension.getSteamUser());
+			});
 			task.finalizedBy(project.getTasks().getByName("copyProjectDependencies"));
 			task.getOutputs().cacheIf(t -> false);
 			task.getOutputs().upToDateWhen(t -> false);
@@ -446,7 +451,8 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 		});
 		
 		project.getTasks().register("calculateRuntime", CalculateRuntimeTask.class, task -> {
-			
+			task.getOutputs().upToDateWhen(t -> false);
+			project.getPluginManager().withPlugin("eclipse", plugin -> task.dependsOn("eclipseClasspath"));
 		}); 
 		
 		project.getTasks().register("regenEclipseRuns", GenerateRunConfigurationTask.class, task -> {
@@ -601,6 +607,12 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 				project.getDependencies().add("compileOnly",
 					project.getDependencies().create(info.group() + ":" + info.artifact() + ":" + info.version())
 				);
+				// Explicit classified requests also follow conflict resolution when a
+				// newer base module is selected from Maven instead of the local Ivy repo.
+				for (ModuleInfo.NativeArtifact nativeJar : info.natives()) {
+					project.getDependencies().add("compileOnly", info.group() + ":" + info.artifact()
+						+ ":" + info.version() + ":" + nativeJar.classifier());
+				}
 			}
 
 			// 7. Remove the temporary flatDir
@@ -661,7 +673,7 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 				// Where Ivy descriptors are found
 				layout.ivy("[organisation]/[module]/ivy-[revision].xml");
 				// Where artifacts are found – matches the symlink location
-				layout.artifact("[organisation]/[module]/[revision]/[artifact]-[revision].[ext]");
+				layout.artifact("[organisation]/[module]/[revision]/[artifact]-[revision](-[classifier]).[ext]");
 			});
 			repo.metadataSources(sources -> sources.ivyDescriptor());
 		});
@@ -722,122 +734,76 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 					xmlFileContent.getWhenMerged().add((classPathMerged) -> {
 						Classpath c = (Classpath) classPathMerged;
 						
-						Set<String> compilePaths = project.getConfigurations().getByName(ProjectDependencyType.compileClasspath.name()).getResolvedConfiguration().getResolvedArtifacts().stream()
-								.map(a -> a.getFile().getAbsoluteFile().toPath().normalize().toString())
-								.collect(Collectors.toSet());
+						Set<File> providerFiles = new java.util.LinkedHashSet<>(project.getConfigurations()
+							.getByName(ProjectDependencyType.provider.name()).getFiles());
+						providerFiles.addAll(project.getConfigurations()
+							.getByName(ProjectDependencyType.retrieveJsonProvider.name()).getFiles());
+						EclipseRuntimeClasspath runtime = EclipseRuntimeClasspath.calculate(project,
+							c.getEntries(), classpath.getDefaultOutputDir(), providerFiles);
+						project.getExtensions().getExtraProperties().set("knotClasspath", runtime.knotClasspath());
+						project.getExtensions().getExtraProperties().set("providerClasspath", runtime.providerClasspath());
+						project.getExtensions().getExtraProperties().set("projectOutputClasspath", runtime.projectOutputClasspath());
+						project.getLogger().info("Setting Knot classpath to: " + runtime.knotClasspath());
+						project.getLogger().info("Setting provider classpath to: " + runtime.providerClasspath());
 						
-						Set<String> pPaths = new HashSet<>();
-						{
-							Set<String> providerPaths = project.getConfigurations()
-									.getByName(ProjectDependencyType.provider.name())
-									.getResolvedConfiguration().getResolvedArtifacts()
-									.stream()
-									.map(a -> a.getFile().getAbsoluteFile().toPath().normalize().toString())
-									.collect(Collectors.toSet());
+						// Keep IDE source attachments independent of runtime classpath selection.
+						for (ClasspathEntry entry : c.getEntries()) {
+							if (entry instanceof Library lib) {
+								String pathStr = lib.getPath();
+								Path path = project.file(pathStr).toPath().toAbsolutePath().normalize();
 							
-							Set<String> jsonProviderPaths = project.getConfigurations()
-									.getByName(ProjectDependencyType.retrieveJsonProvider.name())
-									.getResolvedConfiguration().getResolvedArtifacts()
-									.stream()
-									.map(a -> a.getFile().getAbsoluteFile().toPath().normalize().toString())
-									.collect(Collectors.toSet());
-							
-							
-							pPaths.addAll(providerPaths);
-							pPaths.addAll(jsonProviderPaths);
-						}
-						List<String> knotClasspath = new ArrayList<>();
-						List<String> providerClasspath = new ArrayList<>();
-						
-						Iterator<ClasspathEntry> it = (Iterator<ClasspathEntry>)(Object)c.getEntries().iterator();
-						Path path = null;
-						while(it.hasNext()) {
-							ClasspathEntry cpe = it.next();
-							if(cpe instanceof AbstractClasspathEntry entry) {
-								String pathStr = entry.getPath();
-								path = Path.of(entry.getPath()).toAbsolutePath().normalize();
-								boolean isProvider = false;
-
-								project.getLogger().warn(entry.getClass().getCanonicalName());
-								if(entry instanceof Library lib) {
-	
-									if(modules != null) {
-										ModuleInfo module = null;
-										for (ModuleInfo info : modules.values()) {
-											try {
-												Path jarPath = project.getRootDir().toPath()
-														.resolve(info.relativeJarPath())
-														.toRealPath()
-														.normalize();
-												Path libPath = path.toRealPath().normalize();
-												if (jarPath.equals(libPath)) {
-													module = info;
-													break;
-												}
-											} catch (IOException e) {
-												project.getLogger().debug("failed to resolve source jar for JAR", e);
+								if(modules != null) {
+									ModuleInfo module = null;
+									for (ModuleInfo info : modules.values()) {
+										try {
+											Path jarPath = project.getRootDir().toPath()
+													.resolve(info.relativeJarPath())
+													.toRealPath()
+													.normalize();
+											Path libPath = path.toRealPath().normalize();
+											if (jarPath.equals(libPath)) {
+												module = info;
+												break;
 											}
-										}
-										if(module != null) {
-											SourceStrategy strategy = module.sourceStrategy();
-											if ("decompile".equals(strategy.type)) {
-												Path decompRoot = Path.of(extension.getDecompDir());
-												// Get the original JAR file name (e.g., "wildermyth.jar")
-												Path originalJarName = module.relativeJarPath().getFileName();
-												Path sourcePath = decompRoot.resolve("decomp").resolve(originalJarName);
-												if (Files.exists(sourcePath)) {
-													FileReference sourceRef = c.fileReference(sourcePath.toFile());
-													lib.setSourcePath(sourceRef);
-													project.getLogger().info("Attached decompiled sources for " + pathStr + " -> " + sourcePath);
-												}
-												else {
-													project.getLogger().warn("Decompiled sources not found for " + pathStr + " expected at " + sourcePath);
-												}
-											}
-											else if("file".equals(strategy.type)) {
-												Path sourcePath = project.getRootDir().toPath().resolve(strategy.path).normalize();
-												if (Files.exists(sourcePath)) {
-													FileReference sourceRef = c.fileReference(sourcePath.toFile());
-													lib.setSourcePath(sourceRef);
-													project.getLogger().info("Attached source file for " + pathStr + " -> " + sourcePath);
-												} 
-												else {
-													project.getLogger().warn("Source file not found: " + sourcePath);
-												}
-											}
-											else if ("skip".equals(strategy.type)) {
-												project.getLogger().info("Skipping source attachment for " + pathStr);
-											}
+										} catch (IOException e) {
+											project.getLogger().debug("failed to resolve source jar for JAR", e);
 										}
 									}
-									
-									if(pPaths.contains(lib.getPath())) {
-										project.getLogger().info("Provider dependency found: " + path);
-										providerClasspath.add(pathStr);
-										continue;
+									if(module != null) {
+										SourceStrategy strategy = module.sourceStrategy();
+										if ("decompile".equals(strategy.type)) {
+											Path decompRoot = Path.of(extension.getDecompDir());
+											// Get the original JAR file name (e.g., "wildermyth.jar")
+											Path originalJarName = module.relativeJarPath().getFileName();
+											Path sourcePath = decompRoot.resolve("decomp").resolve(originalJarName);
+											if (Files.exists(sourcePath)) {
+												FileReference sourceRef = c.fileReference(sourcePath.toFile());
+												lib.setSourcePath(sourceRef);
+												project.getLogger().info("Attached decompiled sources for " + pathStr + " -> " + sourcePath);
+											}
+											else {
+												project.getLogger().warn("Decompiled sources not found for " + pathStr + " expected at " + sourcePath);
+											}
+										}
+										else if("file".equals(strategy.type)) {
+											Path sourcePath = project.getRootDir().toPath().resolve(strategy.path).normalize();
+											if (Files.exists(sourcePath)) {
+												FileReference sourceRef = c.fileReference(sourcePath.toFile());
+												lib.setSourcePath(sourceRef);
+												project.getLogger().info("Attached source file for " + pathStr + " -> " + sourcePath);
+											}
+											else {
+												project.getLogger().warn("Source file not found: " + sourcePath);
+											}
+										}
+										else if ("skip".equals(strategy.type)) {
+											project.getLogger().info("Skipping source attachment for " + pathStr);
+										}
 									}
-									
-									/*if(compilePaths.contains(lib.getPath())) {
-										project.getLogger().info("Ignoring compile only dlependency: " + path);
-										continue;
-									}*/
 								}
-								knotClasspath.add(pathStr);
+
 							}
-							
-							if(path != null) {
-								project.getLogger().info("Not a provider dependency: " + path);
-							}
-							//it.remove();
 						}
-						
-						project.getExtensions().getExtraProperties()
-							.set("knotClasspath", String.join(File.pathSeparator, knotClasspath));
-						project.getLogger().info("Setting knot classpath to: " + knotClasspath);
-						
-						project.getExtensions().getExtraProperties()
-							.set("providerClasspath", String.join(File.pathSeparator, providerClasspath));
-						project.getLogger().info("Setting provider classpath to: " + providerClasspath);
 					});
 				});
 
@@ -944,7 +910,7 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 			Path ivyFile = moduleDir.resolve("ivy-" + info.version() + ".xml");
 			String ivyContent = String.format(
 				"<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
-				"<ivy-module version=\"2.0\">\n" +
+				"<ivy-module version=\"2.0\" xmlns:m=\"http://ant.apache.org/ivy/maven\">\n" +
 				"	<info organisation=\"%s\" module=\"%s\" revision=\"%s\"/>\n" +
 				"	<publications>\n" +
 				"		<artifact name=\"%s\" type=\"jar\" ext=\"jar\"/>\n" +
@@ -952,23 +918,38 @@ public class WilderWorkspacePluginImpl implements Plugin<Object> {
 				"</ivy-module>",
 				info.group(), info.artifact(), info.version(), info.artifact()
 			);
+			StringBuilder nativePublications = new StringBuilder();
+			for (ModuleInfo.NativeArtifact nativeJar : info.natives()) {
+				nativePublications.append(String.format(
+					"\t\t<artifact name=\"%s\" type=\"jar\" ext=\"jar\" m:classifier=\"%s\"/>\n",
+					info.artifact(), nativeJar.classifier()));
+			}
+			ivyContent = ivyContent.replace("\t</publications>", nativePublications + "\t</publications>");
 			Files.writeString(ivyFile, ivyContent);
 
 			// Create symlink at standard Ivy layout: [organisation]/[module]/[revision]/[artifact]-[revision].jar
 			Path revisionDir = moduleDir.resolve(info.version().toString());
 			Files.createDirectories(revisionDir);
 			Path targetJar = revisionDir.resolve(info.artifact() + "-" + info.version() + ".jar");
-			Files.deleteIfExists(targetJar);
-			try {
-				Files.createSymbolicLink(targetJar, sourceJar);
-				project.getLogger().info("Created symlink: " + targetJar + " -> " + sourceJar);
-			} catch (UnsupportedOperationException | IOException e) {
-				project.getLogger().warn("Symlinks not supported, copying JAR instead.", e);
-				Files.copy(sourceJar, targetJar, StandardCopyOption.REPLACE_EXISTING);
+			linkOrCopyJar(project, sourceJar, targetJar);
+			for (ModuleInfo.NativeArtifact nativeJar : info.natives()) {
+				Path nativeTarget = revisionDir.resolve(info.artifact() + "-" + info.version() + "-" + nativeJar.classifier() + ".jar");
+				linkOrCopyJar(project, projectRoot.resolve(nativeJar.relativeJarPath()).normalize(), nativeTarget);
 			}
 		}
 	}
 	
+	private void linkOrCopyJar(Project project, Path sourceJar, Path targetJar) throws IOException {
+		Files.deleteIfExists(targetJar);
+		try {
+			Files.createSymbolicLink(targetJar, sourceJar.toAbsolutePath());
+			project.getLogger().info("Created symlink: " + targetJar + " -> " + sourceJar);
+		} catch (UnsupportedOperationException | IOException e) {
+			project.getLogger().warn("Symlinks not supported, copying JAR instead.", e);
+			Files.copy(sourceJar, targetJar, StandardCopyOption.REPLACE_EXISTING);
+		}
+	}
+
 	private boolean canResolveUrl(WWProjectContext context, String urlString) {
 		Project project = context.getProject();
 		project.getLogger().log(LogLevel.INFO, "Checking URL: " + urlString);

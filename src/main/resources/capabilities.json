@@ -564,6 +564,9 @@
 			"name": [
 				"lwjgl-\\d*\\.\\d*\\.\\d*\\.jar"
 			],
+			"natives": [
+				{ "name": "lwjgl-(?<version>\\d+\\.\\d+\\.\\d+)-(?<classifier>natives-[a-z0-9-]+)\\.jar" }
+			],
 			"version": [
 				{
 					"type": "derived",
@@ -591,6 +594,9 @@
 			"name": [
 				"lwjgl-glfw-\\d*\\.\\d*\\.\\d*\\.jar"
 			],
+			"natives": [
+				{ "name": "lwjgl-glfw-(?<version>\\d+\\.\\d+\\.\\d+)-(?<classifier>natives-[a-z0-9-]+)\\.jar" }
+			],
 			"version": [
 				{
 					"type": "derived",
@@ -611,6 +617,9 @@
 			],
 			"name": [
 				"lwjgl-jemalloc-\\d*\\.\\d*\\.\\d*\\.jar"
+			],
+			"natives": [
+				{ "name": "lwjgl-jemalloc-(?<version>\\d+\\.\\d+\\.\\d+)-(?<classifier>natives-[a-z0-9-]+)\\.jar" }
 			],
 			"version": [
 				{
@@ -633,6 +642,9 @@
 			"name": [
 				"lwjgl-nfd.jar"
 			],
+			"natives": [
+				{ "name": "lwjgl-nfd-(?<classifier>natives-[a-z0-9-]+)\\.jar" }
+			],
 			"version": [
 				{
 					"type": "derived",
@@ -653,6 +665,9 @@
 			],
 			"name": [
 				"lwjgl-openal-\\d*\\.\\d*\\.\\d*\\.jar"
+			],
+			"natives": [
+				{ "name": "lwjgl-openal-(?<version>\\d+\\.\\d+\\.\\d+)-(?<classifier>natives-[a-z0-9-]+)\\.jar" }
 			],
 			"version": [
 				{
@@ -675,6 +690,9 @@
 			"name": [
 				"lwjgl-opengl-\\d*\\.\\d*\\.\\d*\\.jar"
 			],
+			"natives": [
+				{ "name": "lwjgl-opengl-(?<version>\\d+\\.\\d+\\.\\d+)-(?<classifier>natives-[a-z0-9-]+)\\.jar" }
+			],
 			"version": [
 				{
 					"type": "derived",
@@ -695,6 +713,9 @@
 			],
 			"name": [
 				"lwjgl-stb-\\d*\\.\\d*\\.\\d*\\.jar"
+			],
+			"natives": [
+				{ "name": "lwjgl-stb-(?<version>\\d+\\.\\d+\\.\\d+)-(?<classifier>natives-[a-z0-9-]+)\\.jar" }
 			],
 			"version": [
 				{

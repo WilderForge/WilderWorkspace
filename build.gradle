@@ -44,6 +44,9 @@ dependencies {
 	api libs.vineflower
 	api libs.gson
 	api libs.thrixlvault
+
+	testImplementation 'org.junit.jupiter:junit-jupiter:5.11.4'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	
 	dependabot libs.asm
 	dependabot libs.asm.analysis
@@ -54,4 +57,9 @@ dependencies {
 	dependabot libs.mixin
 	dependabot libs.log4j.core
 	dependabot libs.log4j.slf4j2.impl
+}
+
+
+tasks.named("test") {
+	useJUnitPlatform()
 }

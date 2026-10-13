@@ -74,34 +74,23 @@ public class CapabilityHandler {
 			Path path = dir.toPath();
 			if (!Files.isDirectory(path)) continue;
 			project.info("Found DIRECTORY, searching inside " + dir);
-			Files.list(path)
-				.filter(p -> p.toString().endsWith(".jar"))
-				.forEach(jar -> {
-					project.info("Found JAR " + jar);
+			try (var jars = Files.list(path)) {
+				for (Path jar : jars.filter(p -> p.toString().endsWith(".jar")).sorted().toList()) {
+					Optional<CanonicalModule> found = findModuleForFile(jar);
+					if (found.isEmpty()) continue;
+					CanonicalModule module = found.get();
+					FileAlias alias = module.fileAliases.stream().filter(candidate -> candidate.matches(jar)).findFirst().orElseThrow();
+					Optional<VersionResult> extracted = alias.extractVersion(jar, project);
+					if (extracted.isEmpty()) continue;
+					VersionResult res = extracted.get();
 					String fileName = jar.getFileName().toString();
-					String moduleName = fileName.substring(0, fileName.length() - 4); // remove .jar
-					this.findModuleForFile(jar).ifPresent(module -> {
-						project.info("Creating modules for " + jar);
-						module.fileAliases.stream()
-						.filter(alias -> alias.matches(jar))
-						.findFirst()
-						.flatMap(alias -> alias.extractVersion(jar, project))
-						.ifPresent(res -> {
-							Path relative = project.getRootDir().relativize(jar);
-							ModuleInfo m = new ModuleInfo(
-								module.getGroup(),
-								module.getName(),
-								res.version,
-								relative,
-								project.getRootDir(),
-								res.sourceStrategy
-							);
-							result.put(moduleName, m);
-							project.info("Created module for " + jar + " (" + m + ")");
-							project.info("Expecting source strategy: " + res.sourceStrategy.type);
-						});
-					});
-				});
+					ModuleInfo info = new ModuleInfo(module.getGroup(), module.getName(), res.version,
+						project.getRootDir().relativize(jar), project.getRootDir(), res.sourceStrategy,
+						alias.findNatives(jar, res.version, project));
+					result.put(fileName.substring(0, fileName.length() - 4), info);
+					project.info("Created module for " + jar + " (" + info + ")");
+				}
+			}
 		}
 		return result;
 	}
@@ -234,11 +223,13 @@ public class CapabilityHandler {
 		public final List<Path> directories;
 		public final List<Pattern> namePatterns;
 		public final List<VersionRule> versionRules;
+		public final List<Pattern> nativePatterns;
 
-		private FileAlias(List<Path> dirs, List<Pattern> patterns, List<VersionRule> rules) {
+		private FileAlias(List<Path> dirs, List<Pattern> patterns, List<VersionRule> rules, List<Pattern> nativePatterns) {
 			this.directories = dirs;
 			this.namePatterns = patterns;
 			this.versionRules = rules;
+			this.nativePatterns = List.copyOf(nativePatterns);
 		}
 
 		public static FileAlias fromJson(CanonicalModule module, JsonObject json, GameProject project) {
@@ -256,7 +247,47 @@ public class CapabilityHandler {
 					.map(e -> createVersionRule(module, e.getAsJsonObject(), project))
 					.collect(Collectors.toList());
 
-			return new FileAlias(dirs, patterns, rules);
+			// Native patterns use named "classifier" and optional "version" groups.
+			// Without a version group, the native inherits the base JAR's version.
+			List<Pattern> natives = new ArrayList<>();
+			if (json.has("natives")) {
+				for (JsonElement nativeRule : json.getAsJsonArray("natives")) {
+					natives.add(Pattern.compile(nativeRule.getAsJsonObject().get("name").getAsString()));
+				}
+			}
+			return new FileAlias(dirs, patterns, rules, natives);
+		}
+
+		public List<ModuleInfo.NativeArtifact> findNatives(Path baseJar, Version version, GameProject project) {
+			if (nativePatterns.isEmpty()) return List.of();
+			Map<String, ModuleInfo.NativeArtifact> artifacts = new java.util.TreeMap<>();
+			for (Path dir : directories) {
+				if (!Files.isDirectory(dir)) continue;
+				try (var files = Files.list(dir)) {
+					for (Path file : files.filter(Files::isRegularFile).sorted().toList()) {
+						for (Pattern pattern : nativePatterns) {
+							var match = pattern.matcher(file.getFileName().toString());
+							if (!match.matches()) continue;
+							String nativeVersion;
+							try { nativeVersion = match.group("version"); }
+							catch (IllegalArgumentException e) { nativeVersion = null; }
+							if (nativeVersion != null && !Version.parse(nativeVersion).equals(version)) continue;
+							String classifier = match.group("classifier");
+							if (classifier == null || !classifier.matches("[A-Za-z0-9][A-Za-z0-9._-]*")) {
+								throw new IllegalArgumentException("Invalid native classifier for " + file);
+							}
+							var artifact = new ModuleInfo.NativeArtifact(classifier, project.getRootDir().relativize(file));
+							var previous = artifacts.putIfAbsent(classifier, artifact);
+							if (previous != null && !previous.equals(artifact)) {
+								throw new IllegalArgumentException("Duplicate native classifier " + classifier + " for " + baseJar);
+							}
+						}
+					}
+				} catch (IOException | VersionParsingException e) {
+					throw new IllegalStateException("Could not discover natives for " + baseJar, e);
+				}
+			}
+			return List.copyOf(artifacts.values());
 		}
 
 		public boolean matches(Path file) {

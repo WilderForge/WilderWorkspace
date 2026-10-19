@@ -1,5 +1,5 @@
 [versions]
-asm_version = "9.11"
+asm_version = "9.11.1"
 commons_lang_version = "3.21.0"
 commons_text_version = "1.15.0"
 commons_io_version = "2.22.0"
